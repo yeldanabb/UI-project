@@ -91,10 +91,6 @@ nav ul li a:hover {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* .tile:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-} */
 
 .tile img {
   width: 100%;
@@ -151,7 +147,6 @@ footer {
   text-decoration: none;
 }
 
-/* adaptivity */
 @media (max-width: 768px) {
   .tiles {
     flex-direction: column;
