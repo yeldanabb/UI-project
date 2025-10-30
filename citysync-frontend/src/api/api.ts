@@ -16,7 +16,7 @@ export const fetchEvents = (categorySlug?: string) =>
   api.get("/events/", { params: categorySlug ? { category: categorySlug } : {} });
 export const fetchEvent = (id: number | string) => api.get(`/events/${id}/`);
 export const fetchContact = () => api.get("/contact/");
-
+export const fetchCategory = (slug: string) => api.get(`/categories/${slug}/`);
 export const createEvent = (formData: FormData) =>
   api.post("/events/", formData, {
     headers: { "Content-Type": "multipart/form-data" },

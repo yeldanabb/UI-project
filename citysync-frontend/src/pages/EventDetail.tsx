@@ -38,7 +38,7 @@ export default function EventDetail(){
       </section>
 
       <section className="cine-info">
-        <h3>{event.description}</h3>
+        <p>{event.description}</p>
         <section className="cine-boxes">
           <div className="cine-box">
             <h3>Location</h3>

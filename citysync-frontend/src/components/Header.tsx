@@ -19,7 +19,6 @@ export default function Header() {
           {categories.map(c => (
             <li key={c.id}><Link to={`/category/${c.slug}`}>{c.name}</Link></li>
           ))}
-          <li><Link to="/add-event">Add Event</Link></li>
         </ul>
       </nav>
     </header>

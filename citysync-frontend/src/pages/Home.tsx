@@ -15,7 +15,7 @@ export default function Home() {
   return (
     <>
       <div className="banner">
-        <img src="/images/brno_city.jpg" alt="City Banner" />
+        <img src="./images/brno_city.jpg" alt="City Banner" />
         <h1>City Sync</h1>
         <Link to="/add-event" className="banner-button">Add Event</Link>
       </div>
