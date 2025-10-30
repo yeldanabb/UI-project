@@ -8,8 +8,8 @@ export default function Footer() {
       <div className="contact">
         <p><strong>BRNO CITY</strong></p>
         <p>Address: 602 00 Brno</p>
-        <p>Tel: +420 99 87 876 890</p>
-        <p>Email: info@brnocity.cz</p>
+        <p>Tel: +420 11 22 333 444</p>
+        <p>Email: citysync@gmail.com</p>
       </div>
 
       <div className="social">
