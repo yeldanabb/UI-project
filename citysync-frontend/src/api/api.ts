@@ -10,7 +10,6 @@ export const api = axios.create({
   withCredentials: false,
 });
 
-
 export const fetchCategories = () => api.get("/categories/");
 export const fetchEvents = (categorySlug?: string) =>
   api.get("/events/", { params: categorySlug ? { category: categorySlug } : {} });
@@ -21,3 +20,10 @@ export const createEvent = (formData: FormData) =>
   api.post("/events/", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+
+// Use axios consistently for contact info creation
+export const createContactInfo = (contactData: {
+  address: string;
+  phone: string;
+  email: string;
+}) => api.post("/contact/", contactData);
