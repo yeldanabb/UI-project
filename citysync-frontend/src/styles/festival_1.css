@@ -70,7 +70,6 @@ nav ul li a:hover {
   font-weight: 500;
 }
 
-/* Інформація */
 .cine-info {
   max-width: 900px;
   margin: 40px auto;
@@ -95,7 +94,6 @@ nav ul li a:hover {
   font-size: 16px;
 }
 
-/* Три інформаційні блоки */
 .cine-boxes {
   display: flex;
   justify-content: space-between;
@@ -136,7 +134,6 @@ nav ul li a:hover {
   text-decoration: underline;
 }
 
-/* Футер */
 footer {
   background-color: #eee;
   padding: 30px 20px;
@@ -161,7 +158,6 @@ footer {
   transform: scale(1.2);
 }
 
-/* Адаптивність */
 @media (max-width: 900px) {
   .banner-overlay {
     padding: 30px 20px;
@@ -200,4 +196,290 @@ footer {
 
 .more-info-btn:hover {
   background-color: #8b1a1a;
+}
+
+.reviews-section {
+  max-width: 1000px;
+  margin: 60px auto;
+  padding: 0 20px;
+}
+
+.reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.reviews-header h2 {
+  font-size: 32px;
+  color: #cc0000;
+  margin: 0;
+}
+
+.rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.average-rating {
+  font-size: 28px;
+  font-weight: bold;
+  color: #333;
+}
+
+.stars-display {
+  display: flex;
+  gap: 2px;
+}
+
+.star {
+  color: #ddd;
+  font-size: 20px;
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.review-count {
+  color: #666;
+  font-size: 14px;
+}
+
+.add-review-btn {
+  background-color: #cc0000;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.add-review-btn:hover {
+  background-color: #990000;
+}
+
+.review-form {
+  background: #f9f9f9;
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #cc0000;
+}
+
+.rating-input {
+  display: flex;
+  gap: 5px;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #ddd;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s ease;
+}
+
+.star-btn:hover {
+  transform: scale(1.2);
+}
+
+.star-btn.active {
+  color: #ffc107;
+}
+
+.submit-review-btn {
+  background-color: #cc0000;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.submit-review-btn:hover {
+  background-color: #990000;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.review-item {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: all 0.3s ease;
+}
+
+.review-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: #ddd;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.review-author {
+  font-weight: bold;
+  font-size: 16px;
+  color: #333;
+}
+
+.review-date {
+  color: #999;
+  font-size: 14px;
+}
+
+.review-rating {
+  margin-bottom: 10px;
+}
+
+.review-comment {
+  color: #666;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.no-reviews {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-style: italic;
+}
+
+.recommendations-section {
+  max-width: 1400px;
+  margin: 60px auto;
+  padding: 0 20px;
+}
+
+.recommendations-section h2 {
+  font-size: 32px;
+  color: #cc0000;
+  margin-bottom: 10px;
+}
+
+.recommendations-subtitle {
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 30px;
+}
+
+.recommendations-carousel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+}
+
+.recommendation-card {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.recommendation-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+  border-color: rgba(204, 0, 0, 0.2);
+}
+
+.recommendation-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.recommendation-content {
+  padding: 15px;
+}
+
+.recommendation-content h3 {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: #333;
+  line-height: 1.3;
+}
+
+.rec-location {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 5px 0;
+}
+
+.rec-date {
+  color: #999;
+  font-size: 13px;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .reviews-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .recommendations-carousel {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .recommendations-carousel {
+    grid-template-columns: 1fr;
+  }
 }

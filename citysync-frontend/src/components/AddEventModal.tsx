@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { createEvent, createContactInfo } from "../api/api";
+import { useState, useEffect } from "react";
+import { createEvent, createContactInfo, fetchCategories } from "../api/api";
+import type { Category } from "../types/types";
 import "../styles/add_event.css";
 
 interface AddEventModalProps {
@@ -12,6 +13,8 @@ interface AddEventModalProps {
 export default function AddEventModal({ open, name, category, onClose }: AddEventModalProps) {
   const [tab, setTab] = useState("basic");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>("");
 
   const [form, setForm] = useState({
     title: name,
@@ -22,6 +25,20 @@ export default function AddEventModal({ open, name, category, onClose }: AddEven
     admission: "",
     external_links: "",
   });
+
+  useEffect(() => {
+    fetchCategories().then((res) => setCategories(res.data));
+  }, []);
+
+  useEffect(() => {
+    if (category) {
+      setForm(prev => ({ ...prev, category: category }));
+      const cat = categories.find(c => c.id === category);
+      if (cat) {
+        setSelectedCategoryName(cat.name);
+      }
+    }
+  }, [category, categories]);
 
   const [contactInfo, setContactInfo] = useState({
     address: "",
@@ -131,6 +148,22 @@ export default function AddEventModal({ open, name, category, onClose }: AddEven
               onChange={updateForm} 
               required 
             />
+
+            <label>Category *</label>
+            <div style={{ 
+              padding: "12px", 
+              backgroundColor: "#f0f8ff", 
+              borderRadius: "6px", 
+              marginBottom: "15px",
+              border: "2px solid #4a90e2"
+            }}>
+              <strong style={{ color: "#4a90e2", fontSize: "16px" }}>
+                {selectedCategoryName || `Category ID: ${form.category}`}
+              </strong>
+              <p style={{ margin: "5px 0 0 0", fontSize: "13px", color: "#666" }}>
+                ✓ Category assigned via drag & drop
+              </p>
+            </div>
 
             <label>Location *</label>
             <input 

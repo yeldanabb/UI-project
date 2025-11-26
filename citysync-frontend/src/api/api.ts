@@ -21,7 +21,6 @@ export const createEvent = (formData: FormData) =>
     headers: { "Content-Type": "multipart/form-data" },
   });
 
-// Use axios consistently for contact info creation
 export const createContactInfo = (contactData: {
   address: string;
   phone: string;

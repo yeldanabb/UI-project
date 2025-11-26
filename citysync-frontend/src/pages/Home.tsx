@@ -22,12 +22,28 @@ export default function Home() {
 
   useEffect(() => {
     (window as any).completeDropToCategory = (categoryId: number) => {
-      setSelectedCategory(categoryId);
-      setDragName((window as any).pendingDragName || "");
-      setIsDragging(false);
-      setDragPosition({ x: 0, y: 0 });
+      const name = (window as any).pendingDragName || dragName;
+      if (name && categoryId) {
+        setSelectedCategory(categoryId);
+        setDragName(name);
+        setIsDragging(false);
+        setDragPosition({ x: 0, y: 0 });
+        console.log(`Category ${categoryId} assigned to event "${name}"`);
+      }
     };
-  }, []);
+  }, [dragName]);
+
+  useEffect(() => {
+    if (dragName && !selectedCategory) {
+      document.body.classList.add('has-drag-box');
+    } else {
+      document.body.classList.remove('has-drag-box');
+    }
+    
+    return () => {
+      document.body.classList.remove('has-drag-box');
+    };
+  }, [dragName, selectedCategory]);
 
   const handleAddEventClick = () => {
     setShowNamePopup(true);
@@ -93,7 +109,7 @@ export default function Home() {
   return (
     <>
       <div className="banner">
-        <img src="./images/brno_city.jpg" alt="City Banner" />
+        <img src="./images/brnocity.jpeg" alt="City Banner" />
         <h1>City Sync</h1>
 
         <button
@@ -167,10 +183,23 @@ export default function Home() {
       )}
 
       <main>
-        <section className="tiles">
-          {events.slice(0, 3).map((ev) => (
-            <EventCard key={ev.id} ev={ev} />
-          ))}
+        <section className="home-content">
+          <div className="section-header">
+            <h2>Featured Events</h2>
+            <p>Discover the best events happening in your city</p>
+          </div>
+          <div className="tiles">
+            {events.slice(0, 3).map((ev) => (
+              <EventCard key={ev.id} ev={ev} />
+            ))}
+          </div>
+          {events.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-state-icon">📅</div>
+              <h3>No events yet</h3>
+              <p>Be the first to add an event to CitySync!</p>
+            </div>
+          )}
         </section>
       </main>
     </>
