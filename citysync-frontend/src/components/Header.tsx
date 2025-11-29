@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { fetchCategories } from "../api/api";
 import type { Category } from "../types/types";
 import "../styles/style_index.css";
@@ -11,6 +11,8 @@ export default function Header() {
   });
   const [isMobile, setIsMobile] = useState(false);
   const [categoryStatuses, setCategoryStatuses] = useState<Record<number, boolean>>({});
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchCategories().then((res) => setCategories(res.data));
@@ -25,6 +27,30 @@ export default function Header() {
     
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Синхронизация выбранной категории с текущим роутом
+  useEffect(() => {
+    // Проверяем, находимся ли мы на странице категории
+    const categoryMatch = location.pathname.match(/^\/category\/([^/]+)$/);
+    
+    if (categoryMatch) {
+      const categorySlug = categoryMatch[1];
+      const category = categories.find(c => c.slug === categorySlug);
+      
+      if (category) {
+        // Выбираем только эту категорию
+        const newStatuses: Record<number, boolean> = {};
+        newStatuses[category.id] = true;
+        setCategoryStatuses(newStatuses);
+      }
+    } else {
+      // Если не на странице категории, сбрасываем выбор
+      // Но только если мы не на странице selected-categories
+      if (!location.pathname.startsWith('/selected-categories')) {
+        setCategoryStatuses({});
+      }
+    }
+  }, [location.pathname, categories]);
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -93,6 +119,33 @@ export default function Header() {
     }
   };
 
+  const handleShowClick = () => {
+    const selectedCategoryIds = Object.keys(categoryStatuses)
+      .filter(key => categoryStatuses[Number(key)])
+      .map(key => Number(key));
+    
+    if (selectedCategoryIds.length > 0) {
+      // Если выбрана только одна категория, переходим на её страницу
+      if (selectedCategoryIds.length === 1) {
+        const category = categories.find(c => c.id === selectedCategoryIds[0]);
+        if (category) {
+          navigate(`/category/${category.slug}`);
+          setIsMenuOpen(false);
+          return;
+        }
+      }
+      
+      // Если выбрано несколько категорий, переходим на страницу selected-categories
+      const selectedSlugs = categories
+        .filter(c => selectedCategoryIds.includes(c.id))
+        .map(c => c.slug)
+        .join(',');
+      
+      navigate(`/selected-categories?categories=${selectedSlugs}`);
+      setIsMenuOpen(false);
+    }
+  };
+
 
   return (
     <header>
@@ -141,47 +194,51 @@ export default function Header() {
             <Link to="/" onClick={(e) => closeMenu(e)}>Main</Link>
           </li>
 
-          {categories.map((c) => {
-            const isEnabled = categoryStatuses[c.id] || false;
-            
-            return (
-            <li
-              key={c.id}
-                className={`nav-item drop-target ${!isEnabled ? 'disabled' : ''}`}
-              data-category-id={c.id} 
-                onDragOver={(e) => handleDragOver(e, c.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, c.id)}
-            >
-                <div className="nav-item-content">
-                  <Link 
-                    to={`/category/${c.slug}`} 
-                    onClick={(e) => closeMenu(e)}
-                    className={!isEnabled ? 'disabled-link' : ''}
+          <li className="nav-item nav-filter-container">
+            <div className="nav-filter-label">Select Categories:</div>
+            <div className="nav-filter-checkboxes">
+              {categories.map((c) => {
+                const isEnabled = categoryStatuses[c.id] || false;
+                
+                return (
+                  <div
+                    key={c.id}
+                    className={`nav-item drop-target ${!isEnabled ? 'disabled' : ''}`}
+                    data-category-id={c.id} 
+                    onDragOver={(e) => handleDragOver(e, c.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, c.id)}
                   >
-                    {c.name}
-                  </Link>
-                  <label 
-                    className="category-checkbox-label"
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      className="category-status-checkbox"
-                      checked={isEnabled}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(c.id, e.target.checked);
-                      }}
+                    <label 
+                      className="category-checkbox-label"
                       onClick={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
-                    />
-                  </label>
-                </div>
-            </li>
-            );
-          })}
+                    >
+                      <input
+                        type="checkbox"
+                        className="category-status-checkbox"
+                        checked={isEnabled}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleStatusChange(c.id, e.target.checked);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      />
+                      <span>{c.name}</span>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+            <button 
+              className="show-categories-button"
+              onClick={handleShowClick}
+              disabled={Object.values(categoryStatuses).filter(Boolean).length === 0}
+            >
+              Apply
+            </button>
+          </li>
         </ul>
       </nav>
     </header>

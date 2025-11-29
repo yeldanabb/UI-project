@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import CategoryPage from "./pages/CategoryPage";
 import EventDetail from "./pages/EventDetail";
+import SelectedCategoriesPage from "./pages/SelectedCategoriesPage";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ChatBot from "./components/ChatBot";
@@ -59,6 +60,7 @@ function App() {
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/about" element={<About />} />
+          <Route path="/selected-categories" element={<SelectedCategoriesPage />} />
         </Routes>
       </main>
       <Footer />

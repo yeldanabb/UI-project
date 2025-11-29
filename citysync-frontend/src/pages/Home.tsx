@@ -5,12 +5,14 @@ import type { Event } from "../types/types";
 import EventCard from "../components/EventCard";
 import AddEventModal from "../components/AddEventModal";
 import EventNamePopup from "../components/EventNamePopup";
+import CategoriesNavbar from "../components/CategoriesNavbar";
 
 export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
   const [showNamePopup, setShowNamePopup] = useState(false);
   const [dragName, setDragName] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
 
@@ -28,10 +30,17 @@ export default function Home() {
         setDragName(name);
         setIsDragging(false);
         setDragPosition({ x: 0, y: 0 });
+        setHoveredCategoryId(null);
         console.log(`Category ${categoryId} assigned to event "${name}"`);
       }
     };
   }, [dragName]);
+
+  useEffect(() => {
+    if (dragName && hoveredCategoryId) {
+      setSelectedCategory(hoveredCategoryId);
+    }
+  }, [hoveredCategoryId, dragName]);
 
   useEffect(() => {
     if (dragName && !selectedCategory) {
@@ -54,6 +63,19 @@ export default function Home() {
     setShowNamePopup(false);
     (window as any).pendingDragName = name;
     setDragPosition({ x: 0, y: 0 });
+  };
+
+  const handleCategoryClick = (categoryId: number) => {
+    if (dragName) {
+      setSelectedCategory(categoryId);
+      setHoveredCategoryId(categoryId);
+    }
+  };
+
+  const handleCategoryDrop = (categoryId: number) => {
+    if ((window as any).completeDropToCategory) {
+      (window as any).completeDropToCategory(categoryId);
+    }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -97,6 +119,16 @@ export default function Home() {
           }
         }
       });
+    } else {
+      const categoryElements = document.querySelectorAll('.drop-target');
+      categoryElements.forEach((element) => {
+        const rect = element.getBoundingClientRect();
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+          element.classList.add("drag-over");
+        } else {
+          element.classList.remove("drag-over");
+        }
+      });
     }
   };
 
@@ -108,6 +140,14 @@ export default function Home() {
 
   return (
     <>
+      <CategoriesNavbar 
+        onCategoryHover={setHoveredCategoryId}
+        onCategoryClick={handleCategoryClick}
+        onCategoryDrop={handleCategoryDrop}
+        selectedCategoryId={dragName ? (selectedCategory || hoveredCategoryId) : null}
+        isCreatingEvent={!!dragName}
+      />
+
       <div className="banner">
         <img src="./images/brnocity.jpeg" alt="City Banner" />
         <h1>City Sync</h1>
