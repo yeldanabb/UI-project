@@ -1,14 +1,16 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from .models import Event, Category, ContactInfo
 from .serializers import EventSerializer, CategorySerializer, ContactInfoSerializer
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny] 
 
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+    permission_classes = [permissions.AllowAny]  
     
     def get_queryset(self):
         queryset = Event.objects.all().select_related('category')
@@ -23,3 +25,4 @@ class EventViewSet(viewsets.ModelViewSet):
 class ContactInfoViewSet(viewsets.ModelViewSet):
     queryset = ContactInfo.objects.all()
     serializer_class = ContactInfoSerializer
+    permission_classes = [permissions.AllowAny]

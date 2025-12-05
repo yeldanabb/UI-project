@@ -4,7 +4,7 @@ import type { Event } from "../types/types";
 
 interface EventCardProps {
   ev: Event;
-  onUpdate?: (updatedEvent: Event) => void;
+  onUpdate?: (updatedEvent: Event) => Promise<void>;
   editMode?: boolean;
 }
 
@@ -12,6 +12,8 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
   const [isEditing, setIsEditing] = useState(false);
   const [editedEvent, setEditedEvent] = useState<Event>({ ...ev });
   const [isHovered, setIsHovered] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -31,7 +33,14 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
     }
   };
 
-  // Focus on title input when editing starts
+  // Effect 1: Exit edit mode when editMode becomes false
+  useEffect(() => {
+    if (!editMode && isEditing) {
+      handleCancel(); // Cancel any unsaved changes
+    }
+  }, [editMode]); // This runs when editMode changes
+
+  // Effect 2: Focus on title input when editing starts
   useEffect(() => {
     if (isEditing && titleInputRef.current) {
       titleInputRef.current.focus();
@@ -42,19 +51,34 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
   const handleEditClick = () => {
     if (editMode && !isEditing) {
       setIsEditing(true);
+      setSaveError(null);
     }
   };
 
-  const handleSave = () => {
-    if (onUpdate) {
-      onUpdate(editedEvent);
+  const handleSave = async () => {
+    if (!onUpdate) {
+      setIsEditing(false);
+      return;
     }
-    setIsEditing(false);
+    
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      await onUpdate(editedEvent);
+      setIsEditing(false);
+    } catch (error) {
+      setSaveError("Failed to save changes. Please try again.");
+      console.error("Save error:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setEditedEvent({ ...ev });
     setIsEditing(false);
+    setSaveError(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -100,7 +124,7 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
         <img src={imageUrl} alt={ev.title} />
         <div className="tile-category-badge">{ev.category.name}</div>
         
-        {/* Edit mode indicator */}
+        {/* Edit mode indicator - only show when editMode is true AND not editing */}
         {editMode && !isEditing && isHovered && (
           <div className="edit-mode-hint">
             <PencilIcon style={{ width: '12px', height: '12px' }} />
@@ -108,7 +132,7 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
           </div>
         )}
         
-        {/* Normal mode link indicator */}
+        {/* Normal mode link indicator - only show when editMode is false */}
         {!editMode && ev.external_links && isHovered && !isEditing && (
           <div className="link-mode-hint">
             <LinkIcon style={{ width: '12px', height: '12px' }} />
@@ -129,6 +153,7 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
               onKeyDown={handleKeyDown}
               className="edit-title-input"
               placeholder="Event title"
+              disabled={isSaving}
             />
           </div>
         ) : (
@@ -157,6 +182,7 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
               className="edit-description-textarea"
               placeholder="Event description"
               rows={3}
+              disabled={isSaving}
             />
             
             {/* External link field */}
@@ -168,6 +194,7 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
                 onKeyDown={handleKeyDown}
                 className="edit-link-input"
                 placeholder="External link (optional)"
+                disabled={isSaving}
               />
             </div>
           </div>
@@ -178,30 +205,41 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
                 {ev.description.substring(0, 120)}...
               </p>
             )}
-            
-            {/* Show link indicator if event has external link and we're not in edit mode */}
-            {ev.external_links && !editMode && (
-              <div className="external-link-indicator">
-                🔗 {ev.external_links.replace(/^https?:\/\//, '').replace(/\/$/, '').substring(0, 40)}...
-              </div>
-            )}
           </>
         )}
 
-        {/* Edit mode actions */}
-        {isEditing && (
+        {/* Save error message */}
+        {saveError && (
+          <div className="save-error-message">
+            ⚠️ {saveError}
+          </div>
+        )}
+
+        {/* Edit mode actions - only show when isEditing is true */}
+        {isEditing && editMode && (
           <div className="edit-actions">
             <button 
               className="edit-save-button"
               onClick={handleSave}
+              disabled={isSaving}
               title="Save (Enter)"
             >
-              <CheckIcon style={{ width: '16px', height: '16px' }} />
-              Save
+              {isSaving ? (
+                <>
+                  <div className="saving-spinner"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckIcon style={{ width: '16px', height: '16px' }} />
+                  Save
+                </>
+              )}
             </button>
             <button 
               className="edit-cancel-button"
               onClick={handleCancel}
+              disabled={isSaving}
               title="Cancel (Esc)"
             >
               <XMarkIcon style={{ width: '16px', height: '16px' }} />
