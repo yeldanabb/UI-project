@@ -1,3 +1,12 @@
+// Author: Balseit Yeldana
+// Role: Full implementation of AddEventModal which is responsible for tabs, 
+//       contact creation, image upload and submit
+
+// Notes:
+// - This modal receives the event name and category (set via drag-drop) and provides
+//   a multi-tab UI to fill event details. Submits via createEvent API.
+// - Implemented entirely by the author.
+
 import { useState, useEffect } from "react";
 import { createEvent, createContactInfo, fetchCategories } from "../api/api";
 import type { Category } from "../types/types";
@@ -30,6 +39,7 @@ export default function AddEventModal({ open, name, category, onClose }: AddEven
     fetchCategories().then((res) => setCategories(res.data));
   }, []);
 
+  // keep category id and readable name in sync
   useEffect(() => {
     if (category) {
       setForm(prev => ({ ...prev, category: category }));
@@ -54,6 +64,7 @@ export default function AddEventModal({ open, name, category, onClose }: AddEven
   const updateContactInfo = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setContactInfo({ ...contactInfo, [e.target.name]: e.target.value });
 
+  // Submit flow: optionally create contact info, then create event with FormData
   const submit = async () => {
     if (isSubmitting) return;
     

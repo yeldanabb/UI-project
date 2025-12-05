@@ -1,3 +1,9 @@
+// Author: Balseit Yeldana
+// Role: Small popup component to capture the new event name before dragging
+
+// Notes:
+// - This component collects the event name and passes it back to Home via onSubmit.
+// - Implemented entirely by the author.
 import { useState } from "react";
 import "../styles/style_index.css";
 
