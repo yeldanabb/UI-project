@@ -1102,7 +1102,6 @@ nav ul li a:hover {
 }
 
 
-<<<<<<< HEAD
 /* Edit Mode Toggle Button */
 .edit-mode-toggle {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
@@ -1146,8 +1145,6 @@ nav ul li a:hover {
 }
 
 /* Header row for edit mode toggle */
-=======
->>>>>>> dfaff52ecb50db24f456894ddef6b604176c6b59
 .header-row {
   position: relative;
   display: flex;
