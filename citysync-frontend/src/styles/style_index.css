@@ -1011,7 +1011,6 @@ nav ul li a:hover {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* External link indicator */
 .external-link-indicator {
   background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
   border: 1px solid #bae6fd;
@@ -1027,7 +1026,6 @@ nav ul li a:hover {
   animation: fadeIn 0.3s ease;
 }
 
-/* Edit mode styles */
 .tile.editing {
   box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
 }
@@ -1102,7 +1100,6 @@ nav ul li a:hover {
 }
 
 
-/* Edit Mode Toggle Button */
 .edit-mode-toggle {
   background: linear-gradient(135deg, #fef3c7, #fde68a);
   border: 2px solid #fbbf24;
@@ -1144,7 +1141,6 @@ nav ul li a:hover {
   font-size: 16px;
 }
 
-/* Header row for edit mode toggle */
 .header-row {
   position: relative;
   display: flex;
@@ -1175,7 +1171,6 @@ nav ul li a:hover {
   user-select: none;
 }
 
-/* Toggle Switch */
 .edit-toggle {
   position: relative;
   width: 120px;
@@ -1193,7 +1188,6 @@ nav ul li a:hover {
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-/* Toggle Slider */
 .toggle-slider {
   position: absolute;
   top: 4px;
@@ -1213,7 +1207,6 @@ nav ul li a:hover {
   background: white;
 }
 
-/* Toggle Icons */
 .toggle-icons {
   position: absolute;
   top: 0;
@@ -1244,7 +1237,6 @@ nav ul li a:hover {
   opacity: 1;
 }
 
-/* Toggle Status Text */
 .toggle-status {
   position: absolute;
   top: 0;
@@ -1266,7 +1258,6 @@ nav ul li a:hover {
   color: white;
 }
 
-/* Toggle Hint */
 .toggle-hint {
   font-size: 12px;
   color: #6b7280;
@@ -1280,7 +1271,6 @@ nav ul li a:hover {
   to { opacity: 1; }
 }
 
-/* Header row alignment */
 .header-row {
   display: flex;
   justify-content: space-between;
@@ -1307,7 +1297,6 @@ nav ul li a:hover {
   font-size: 16px;
 }
 
-/* Mobile responsiveness */
 @media (max-width: 768px) {
   .header-row {
     flex-direction: column;
@@ -1328,7 +1317,6 @@ nav ul li a:hover {
   }
 }
 
-/* Hover effects */
 .edit-toggle:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
@@ -1338,7 +1326,6 @@ nav ul li a:hover {
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
-/* Add a subtle pulse animation when toggle is active */
 @keyframes pulse {
   0% { box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
   50% { box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5); }
@@ -1349,12 +1336,10 @@ nav ul li a:hover {
   animation: pulse 2s infinite;
 }
 
-/* Disable pulse on hover */
 .edit-toggle.active:hover {
   animation: none;
 }
 
-/* Edit mode active state for tiles */
 .tile.edit-mode-active {
   border: 2px dashed #c6c6c6;
   background: linear-gradient(135deg, #fffbeb, #fff0f0);
@@ -1365,7 +1350,6 @@ nav ul li a:hover {
   transform: translateY(-4px);
 }
 
-/* Edit mode hint */
 .edit-mode-hint {
   position: absolute;
   bottom: 12px;
@@ -1402,7 +1386,6 @@ nav ul li a:hover {
   z-index: 2;
 }
 
-/* External link indicator */
 .external-link-indicator {
   background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
   border: 1px solid #bae6fd;
@@ -1421,7 +1404,6 @@ nav ul li a:hover {
   white-space: nowrap;
 }
 
-/* ===== DRAFT LINK INPUT FIELD ===== */
 .draft-link-input {
   display: flex;
   align-items: center;
@@ -1459,7 +1441,6 @@ nav ul li a:hover {
   color: #333;
 }
 
-/* Link input when field is active */
 .draft-field-group.active .draft-link-input {
   background-color: #fff5f5;
   border-radius: 6px;
@@ -1549,7 +1530,6 @@ nav ul li a:hover {
   font-weight: normal;
 }
 
-/* Animation for hints */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }

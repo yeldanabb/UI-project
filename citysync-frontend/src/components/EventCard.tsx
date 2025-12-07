@@ -65,10 +65,29 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
     setSaveError(null);
     
     try {
+      if (!editedEvent.title.trim()) {
+        setSaveError("Title is required");
+        titleInputRef.current?.focus();
+        setIsSaving(false);
+        return;
+      }
+      
+      if (!editedEvent.location.trim()) {
+        setSaveError("Location is required");
+        setIsSaving(false);
+        return;
+      }
+      
+      if (!editedEvent.date.trim()) {
+        setSaveError("Date is required");
+        setIsSaving(false);
+        return;
+      }
+      
       await onUpdate(editedEvent);
       setIsEditing(false);
-    } catch (error) {
-      setSaveError("Failed to save changes. Please try again.");
+    } catch (error: any) {
+      setSaveError(error.message || "Failed to save changes. Please try again.");
       console.error("Save error:", error);
     } finally {
       setIsSaving(false);
@@ -202,7 +221,7 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
           <>
             {ev.description && (
               <p className="tile-description">
-                {ev.description.substring(0, 120)}...
+                {ev.description.substring(0, 300)}
               </p>
             )}
           </>
