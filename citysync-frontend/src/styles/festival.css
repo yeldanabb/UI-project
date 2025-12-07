@@ -1,3 +1,13 @@
+/* 
+   Author: Polina Sevastianova
+   Role: Festival 
+   - Global layout and typography
+   - Navigation and breadcrumb styling
+   - Banner with overlay
+   - Category filter buttons
+   - Festival/event cards grid and cards
+   - Buttons and hover effects
+   - Responsive adjustments */
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
