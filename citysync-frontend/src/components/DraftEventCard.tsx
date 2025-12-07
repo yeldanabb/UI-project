@@ -1,11 +1,5 @@
-// Author: Balseit Yeldana
-// Role: Draft event card that looks exactly like EventCard but with input fields
-// Notes:
-// - This component appears in the banner area after drag-to-category
-// - Uses the EXACT same styling as EventCard component but with form inputs
-
 import { useState, useEffect, useRef, type KeyboardEvent, forwardRef } from "react";
-import { CalendarIcon, MapPinIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { CalendarIcon, MapPinIcon, ChevronDownIcon, LinkIcon } from "@heroicons/react/24/outline"; // Added LinkIcon
 import type { Category } from "../types/types";
 import "../styles/style_index.css";
 
@@ -62,19 +56,18 @@ const DraftEventCard = forwardRef<HTMLDivElement, DraftEventCardProps>(({
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Create internal refs if external refs not provided
   const internalTitleRef = useRef<HTMLInputElement>(null);
   const internalLocationRef = useRef<HTMLInputElement>(null);
   const internalDateRef = useRef<HTMLInputElement>(null);
   const internalDescriptionRef = useRef<HTMLTextAreaElement>(null);
+  const internalLinkRef = useRef<HTMLInputElement>(null); // Added link ref
   
-  // Use external refs if provided, otherwise use internal refs
   const titleRef = titleInputRef || internalTitleRef;
   const locationRef = locationInputRef || internalLocationRef;
   const dateRef = dateInputRef || internalDateRef;
   const descriptionRef = descriptionTextareaRef || internalDescriptionRef;
+  const linkRef = internalLinkRef; // Link ref doesn't come from props
   
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -109,7 +102,6 @@ const DraftEventCard = forwardRef<HTMLDivElement, DraftEventCardProps>(({
 
   const getCategoryName = () => {
     if (draft.categoryName) return draft.categoryName;
-    
     const foundCategory = categories.find(c => c.id === draft.category);
     return foundCategory?.name || `Category ${draft.category}`;
   };
@@ -118,7 +110,6 @@ const DraftEventCard = forwardRef<HTMLDivElement, DraftEventCardProps>(({
                       draft.location.trim() !== "" && 
                       draft.date.trim() !== "";
 
-  // Handle Enter key for quick submission
   const handleFieldKeyPress = (e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>, fieldName: string) => {
     if (onKeyPress) {
       onKeyPress(e, fieldName);
@@ -142,7 +133,6 @@ const DraftEventCard = forwardRef<HTMLDivElement, DraftEventCardProps>(({
           )}
         </div>
         
-        {/* Category Selector Badge/Dropdown */}
         <div ref={dropdownRef} className="draft-category-wrapper">
           <div 
             className={`tile-category-badge draft-category-badge ${showCategoryDropdown ? 'active' : ''}`}
@@ -191,7 +181,7 @@ const DraftEventCard = forwardRef<HTMLDivElement, DraftEventCardProps>(({
       </div>
 
       <div className="tile-content draft-tile-content">
-        <div className={`draft-field-group ${activeField === 'title' ? 'active' : ''} ${!draft.title.trim() ? 'required' : ''}`}>
+        <div className={`draft-field-group ${activeField === 'title' ? 'active' : ''}`}>
           <input
             ref={titleRef as React.RefObject<HTMLInputElement>}
             className="draft-title-input"
@@ -202,13 +192,10 @@ const DraftEventCard = forwardRef<HTMLDivElement, DraftEventCardProps>(({
             placeholder="Event title *"
             disabled={isSubmitting}
           />
-          <div className="field-hint">
-            {draft.title.trim() ? "✓ Filled • Press Enter to go to next field" : "Required • Fill this field first"}
-          </div>
         </div>
 
         <div className="tile-meta draft-tile-meta">
-          <div className={`draft-field-group ${activeField === 'location' ? 'active' : ''} ${!draft.location.trim() ? 'required' : ''}`}>
+          <div className={`draft-field-group ${activeField === 'location' ? 'active' : ''}`}>
             <div className="tile-location draft-location-input">
               <MapPinIcon />
               <input
@@ -223,7 +210,7 @@ const DraftEventCard = forwardRef<HTMLDivElement, DraftEventCardProps>(({
             </div>
           </div>
           
-          <div className={`draft-field-group ${activeField === 'date' ? 'active' : ''} ${!draft.date.trim() ? 'required' : ''}`}>
+          <div className={`draft-field-group ${activeField === 'date' ? 'active' : ''}`}>
             <div className="tile-date draft-date-input">
               <CalendarIcon />
               <input
@@ -249,6 +236,22 @@ const DraftEventCard = forwardRef<HTMLDivElement, DraftEventCardProps>(({
             rows={2}
             disabled={isSubmitting}
           />
+        </div>
+
+        {/* Added external link field */}
+        <div className="draft-field-group">
+          <div className="tile-link draft-link-input">
+            <LinkIcon />
+            <input
+              ref={linkRef}
+              type="text"
+              value={draft.external_links}
+              onChange={(e) => handleFieldChange('external_links', e.target.value)}
+              onKeyDown={(e) => handleFieldKeyPress(e, 'link')}
+              placeholder="Event website link (Optional)..."
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
 
         <div className="draft-status">

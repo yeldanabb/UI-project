@@ -336,7 +336,6 @@ export default function Home() {
     }
   };
 
-  // Cancel draft (just clear it)
   const handleCancelDraft = () => {
     setDraftEvent({
       id: `draft-${Date.now()}`,
