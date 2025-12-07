@@ -1,3 +1,7 @@
+// One of the authors: Orynbassar Abylaikhan (xorynba00)
+// Role: displays all events for a specific category
+// Includes filtering (all/upcoming/popular), sorting, and category banner UI 
+
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import "../styles/festival.css";
@@ -6,6 +10,7 @@ import type { Event } from "../types/types";
 import type { Category } from "../types/types";
 import { MapPinIcon } from "@heroicons/react/24/outline";
 
+// Utility: formats slug like "music-fest" → "Music Fest"
 const formatCategoryName = (slug: string | undefined) => {
   if (!slug) return 'Category';
   
@@ -15,12 +20,13 @@ const formatCategoryName = (slug: string | undefined) => {
 };
 
 export default function CategoryPage(){
+  // States
   const { slug } = useParams<{ slug: string }>();
   const [events, setEvents] = useState<Event[]>([]);
   const [category, setCategory] = useState<Category | null>(null);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'popular'>('all');
   
-
+  // Fetch events amd category info every time slug changes
    useEffect(() => {
     if (!slug) return;
     fetchEvents(slug)
@@ -33,15 +39,18 @@ export default function CategoryPage(){
 
   const categoryName = formatCategoryName(slug);
 
+  // Apply filter logic
   const filteredEvents = events.filter(event => {
     if (filter === 'all') return true;
     if (filter === 'upcoming') {
       const eventDate = new Date(event.date);
       return eventDate >= new Date();
     }
+    // placeholder for "popular" — currently returns all
     return true;
   });
 
+  // Sort events chronologically
   const sortedEvents = [...filteredEvents].sort((a, b) => {
     const dateA = new Date(a.date).getTime();
     const dateB = new Date(b.date).getTime();
@@ -50,12 +59,14 @@ export default function CategoryPage(){
 
   return (
     <main>
+      {/* Breadcrumb navigation */}
       <nav className="breadcrumb">
         <Link to="/">Home</Link>
         <span className="breadcrumb-separator"> / </span>
         <span className="breadcrumb-current">{categoryName}</span>
       </nav>
 
+      {/* Category banner */}
       <section className="category-banner">
         <div className="banner-overlay">
           <h1>{categoryName}</h1>
@@ -65,6 +76,7 @@ export default function CategoryPage(){
         </div>
       </section>
 
+      {/* Filter buttons */}
       <section className="category-filters">
         <button 
           className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
@@ -86,9 +98,12 @@ export default function CategoryPage(){
         </button>
       </section>
 
+      {/* Events Grid */}
       <section className="festival-grid">
         {sortedEvents.length > 0 ? (
+          // Map through events
           sortedEvents.map(ev => {
+            // Build event image URL (local or external)
             const imageUrl = ev.image 
               ? (ev.image.startsWith('http') 
                   ? ev.image 
@@ -101,6 +116,7 @@ export default function CategoryPage(){
                   <img src={imageUrl} alt={ev.title}/>
                   <div className="card-date-badge">{ev.date}</div>
                 </div>
+                {/* Event content */}
                 <div className="card-content">
                   <h2>{ev.title}</h2>
                   <p className="card-location"><MapPinIcon style={{ width: '14px', height: '14px', display: 'inline-block', marginRight: '4px', verticalAlign: 'middle' }} /> {ev.location}</p>

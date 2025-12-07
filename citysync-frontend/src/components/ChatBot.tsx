@@ -1,3 +1,8 @@
+// Author: Orynbassar Abylaikhan (xorynba00)
+// Role: Provide an in-app assistant that answers user questions about events using the local JSON database.
+// Notes: The key part of this component is how it formats event data into JSON and uses an LLM strictly as a database lookup tool.
+//        I was using one of the deepseek keys which later expired, but believe me it worked perfectly during development xD
+
 import { useState, useRef, useEffect } from "react";
 import { fetchEvents, fetchCategories } from "../api/api";
 import type { Event, Category } from "../types/types";
@@ -11,22 +16,27 @@ interface Message {
 
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
+  // Stores conversation messages
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content: "Hello! I'm the CitySync assistant. I can tell you about upcoming events and answer your questions. How can I help you?"
     }
   ]);
+
+  // States for input, loading indicator and fetched data
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Load events and categories on mount
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [eventsRes, categoriesRes] = await Promise.all([
+        // Fetch everything in parallel
+        const [eventsRes, categoriesRes] = await Promise.all([ 
           fetchEvents(),
           fetchCategories()
         ]);
@@ -39,15 +49,18 @@ export default function ChatBot() {
     loadData();
   }, []);
 
+  // Auto-scroll whenever messages change 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Converts event objects to JSON so LLM uses it as database
   const formatEventsAsJSON = (eventsToFormat: Event[]): string => {
     if (eventsToFormat.length === 0) {
       return "[]";
     }
 
+    // Preparing event objects with meaningful fields
     const eventsJSON = eventsToFormat.map(event => {
       const eventData: any = {
         id: event.id,
@@ -61,6 +74,8 @@ export default function ChatBot() {
         }
       };
 
+
+      // Add optional fields only if they exist 
       if (event.description && event.description.trim()) {
         eventData.description = event.description;
       }
@@ -93,18 +108,23 @@ export default function ChatBot() {
   };
 
 
+  // Sends user message and calls Deepseek to generate assistant response
   const sendMessage = async () => {
+    // Preventing empty messages or spam while loading
     if (!input.trim() || isLoading) return;
 
+    // Add user message
     const userMessage: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
+      // JSON database for LLM
       const eventsJSON = formatEventsAsJSON(events);
       const categoriesJSON = JSON.stringify(categories, null, 2);
 
+      // Special prompt which is used to force LLM to behave like a database lookup tool
       const systemPrompt = `You are a database query assistant for CitySync event platform. Your ONLY job is to look up events from the provided JSON data and return EXACT matches.
 
 CRITICAL RULES - VIOLATION MEANS FAILURE:
@@ -131,11 +151,13 @@ You: "Brno Christmas is a wonderful event..." [WRONG - you're making things up]
 
 Remember: You are a database lookup tool. Only return what exists in the JSON data above.`;
 
+      // Build conversation without last user message (added separately)
       const conversationMessages = messages.slice(0, -1).map(msg => ({
         role: msg.role,
         content: msg.content
       }));
 
+      // Send request to DeepSeek API
       const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -162,11 +184,13 @@ Remember: You are a database lookup tool. Only return what exists in the JSON da
       }
 
       const data = await response.json();
+      // Append assistant message
       const assistantMessage: Message = {
         role: "assistant",
         content: data.choices[0]?.message?.content || "Sorry, I couldn't get a response."
       };
 
+      // Fallback error response
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Chat error:", error);
@@ -180,6 +204,7 @@ Remember: You are a database lookup tool. Only return what exists in the JSON da
     }
   };
 
+  // Send message with Enter (without Shift)
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -199,6 +224,7 @@ Remember: You are a database lookup tool. Only return what exists in the JSON da
         </button>
       )}
 
+      {/* Chatbot window */}
       {isOpen && (
         <div className="chatbot-container">
           <div className="chatbot-header">
@@ -211,7 +237,8 @@ Remember: You are a database lookup tool. Only return what exists in the JSON da
               ×
             </button>
           </div>
-          
+
+          {/* Chat history */}
           <div className="chatbot-messages">
             {messages.map((msg, index) => (
               <div key={index} className={`message ${msg.role}`}>

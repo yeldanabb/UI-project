@@ -10,6 +10,7 @@ import type { Event, Category } from "../types/types";
 import EventCard from "../components/EventCard";
 import CategoriesNavbar from "../components/CategoriesNavbar";
 import DraftEventCard from "../components/DraftEventCard";
+import Map from "../components/Map";
 
 // Draft event type
 interface DraftEvent {
@@ -389,8 +390,8 @@ export default function Home() {
     }
   };
 
-  // Get LAST 5 created events (most recent first)
-  const featuredEvents = events.slice(0, 5);
+  // Get LAST 3 created events (most recent first)
+  const featuredEvents = events.slice(0, 3);
 
   if (isLoading) {
     return (
@@ -494,6 +495,15 @@ export default function Home() {
               <p>Create the first event by typing in the form above!</p>
             </div>
           )}
+        </section>
+
+        {/* Map section */}
+        <section className="home-content">
+          <div className="section-header">
+            <h2>Map of events</h2>
+            <p>Explore the upcoming events in Brno!</p>
+          </div>
+          <Map events={events} />
         </section>
       </main>
     </>

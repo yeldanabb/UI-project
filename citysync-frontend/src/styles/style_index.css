@@ -1097,7 +1097,7 @@ kbd {
 .home-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 60px 40px;
+  padding: 40px 40px;
 }
 
 .section-header {
@@ -1278,6 +1278,10 @@ kbd {
   gap: 8px;
   box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
   font-family: inherit;
+  position: absolute;
+  right: 0px;
+  top: 15%;
+  transform: translateY(-20%);
 }
 
 .edit-mode-toggle:hover {
@@ -1302,6 +1306,7 @@ kbd {
 
 /* Header row for edit mode toggle */
 .header-row {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
