@@ -7,6 +7,15 @@
 // - Designed the visual feedback system (active field highlighting, status messages)
 // - Created the error handling and user notification system
 
+// Other parts of this file were implemented by Polina:
+// - CategoriesNavbar component usage and props handling
+// - Banner section (title, description, image)
+// - Map section and rendering of event locations
+// - Empty state message ("No existing events yet")
+// - editMode toggle button wrapper and header layout
+// - Featured events slicing and ordering (partially)
+// - Main JSX layout (sections, wrappers, and overall page structure)
+
 import { useEffect, useState, useRef, type KeyboardEvent } from "react";
 import "../styles/style_index.css";
 import { fetchEvents, createEvent, fetchCategories, updateEvent } from "../api/api";
@@ -71,6 +80,7 @@ export default function Home() {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
 
+//Loading events and categories from API
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -336,7 +346,12 @@ export default function Home() {
   };
 
   const featuredEvents = events.slice(0, 5);
-
+  
+ // Role: Main JSX structure and rendering
+  // - CategoriesNavbar
+  // - Banner section
+  // - Featured events list and draft card
+  // - Empty state
   if (isLoading) {
     return (
       <div className="loading-container">
