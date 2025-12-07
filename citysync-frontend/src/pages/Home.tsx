@@ -1,7 +1,11 @@
 // One of the authors: Balseit Yeldana
 // Role: Inline event creation in Featured Events list
-// Notes:
-//   This file shows an editable draft event card as first item in Featured Events
+// - Designed and implemented the draft-as-first-item user interaction pattern
+// - Created keyboard navigation system (Enter/Ctrl+Enter shortcuts)
+// - Developed real-time validation with visual feedback
+// - Implemented edit mode toggle for existing events
+// - Designed the visual feedback system (active field highlighting, status messages)
+// - Created the error handling and user notification system
 
 import { useEffect, useState, useRef, type KeyboardEvent } from "react";
 import "../styles/style_index.css";

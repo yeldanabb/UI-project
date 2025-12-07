@@ -1,5 +1,14 @@
+// Author: Balseit Yeldana (xbalsey00)
+// Description::
+// Draft event card component implementing the "draft-first" creation pattern.
+// This component appears as the FIRST item in the Featured Events list, providing an
+// always-accessible creation interface that blends seamlessly with existing content.
+
+// "Type where you look" - Users can start typing immediately without finding
+// a separate "Add Event" button, reducing creation friction.
+
 import { useState, useEffect, useRef, type KeyboardEvent, forwardRef } from "react";
-import { CalendarIcon, MapPinIcon, ChevronDownIcon, LinkIcon } from "@heroicons/react/24/outline"; // Added LinkIcon
+import { CalendarIcon, MapPinIcon, ChevronDownIcon, LinkIcon } from "@heroicons/react/24/outline"; 
 import type { Category } from "../types/types";
 import "../styles/style_index.css";
 

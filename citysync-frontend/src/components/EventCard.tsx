@@ -1,3 +1,9 @@
+// One of the authors: Balseit Yeldana (xbalsey00)
+// Role: Contextual Inline Editing System for Existing Events
+// Event card component implementing in-place editing functionality.
+// When edit mode is enabled, existing event cards become interactive
+// editing surfaces, allowing users to modify content without navigation
+// to separate forms or pages.
 import { useState, useRef, useEffect } from "react";
 import { CalendarIcon, MapPinIcon, PencilIcon, CheckIcon, XMarkIcon, LinkIcon } from "@heroicons/react/24/outline";
 import type { Event } from "../types/types";
@@ -33,28 +39,24 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
     }
   };
 
-  // Effect 1: Exit edit mode when editMode becomes false
   useEffect(() => {
     if (!editMode && isEditing) {
-      handleCancel(); // Cancel any unsaved changes
+      handleCancel(); 
     }
-  }, [editMode]); // This runs when editMode changes
+  }, [editMode]); 
 
-  // Effect 2: Focus on title input when editing starts
   useEffect(() => {
     if (isEditing && titleInputRef.current) {
       titleInputRef.current.focus();
       titleInputRef.current.select();
     }
   }, [isEditing]);
-
   const handleEditClick = () => {
     if (editMode && !isEditing) {
       setIsEditing(true);
       setSaveError(null);
     }
   };
-
   const handleSave = async () => {
     if (!onUpdate) {
       setIsEditing(false);
@@ -110,13 +112,11 @@ export default function EventCard({ ev, onUpdate, editMode = false }: EventCardP
   };
 
   const handleCardClick = () => {
-    // If edit mode is ON and we're not already editing, start editing
     if (editMode && !isEditing) {
       setIsEditing(true);
       return;
     }
     
-    // If edit mode is OFF and event has external link, navigate to it
     if (!editMode && ev.external_links && !isEditing) {
       window.open(ev.external_links, '_blank', 'noopener,noreferrer');
     }

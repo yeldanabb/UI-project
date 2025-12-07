@@ -1,3 +1,6 @@
+//Author: Balseit Yeldana
+//Simple page about our project
+
 import "../styles/style_about.css";
 
 const About = () => {

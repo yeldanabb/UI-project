@@ -517,6 +517,9 @@ nav ul li a:hover {
   margin: 0;
 }
 
+
+/*Author - Balseit Yeldana xbalsey00
+Design for event creation card*/
 .draft-image-wrapper {
   height: 240px;
   cursor: pointer;
@@ -746,7 +749,7 @@ nav ul li a:hover {
 
 .draft-category-badge:hover .category-dropdown-icon {
   transform: rotate(180deg);
-}
+} /*End of design for a draft card*/
 
 .category-dropdown-menu {
   position: absolute;
@@ -808,6 +811,9 @@ nav ul li a:hover {
   padding: 0;
 }
 
+
+/*Author*//*Author - Balseit Yeldana xbalsey00
+Design for event creation card*/
 .draft-title-input::placeholder {
   color: #999;
 }
@@ -878,7 +884,7 @@ nav ul li a:hover {
 
 .draft-file-input {
   display: none;
-}
+} /*End of a draft card*/
 
 .categories-navbar {
   background: white;
@@ -987,6 +993,8 @@ nav ul li a:hover {
   border: 1px solid rgba(0,0,0,0.05);
 }
 
+/*Author - Balseit Yeldana xbalsey00
+Editing mode*/
 .edit-hint-badge {
   position: absolute;
   bottom: 12px;
@@ -1264,7 +1272,7 @@ nav ul li a:hover {
   text-align: right;
   font-weight: 500;
   animation: fadeIn 0.3s ease;
-}
+}   /*end of editing mode*/
 
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -1317,6 +1325,9 @@ nav ul li a:hover {
   }
 }
 
+
+/*Author - xbalsey00
+Extras for link/edit modes*/
 .edit-toggle:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
@@ -1528,7 +1539,7 @@ nav ul li a:hover {
 .edit-link-input::placeholder {
   color: #9ca3af;
   font-weight: normal;
-}
+} /*end*/
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(5px); }
