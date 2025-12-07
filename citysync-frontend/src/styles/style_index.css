@@ -1,3 +1,9 @@
+/* 
+Authors: 
+- Balseit Yeldana: designed the event/draft card styles, including image wrappers, category badges, inputs, status indicators, and action buttons. 
+- Polina Sevastianova: created styles for edit and link modes, including tile editing, edit-toggle buttons, action buttons, external link indicators, and interactive hints. 
+*/
+
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
