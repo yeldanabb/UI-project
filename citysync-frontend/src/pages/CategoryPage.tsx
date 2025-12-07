@@ -1,4 +1,4 @@
-// One of the authors: Orynbassar Abylaikhan (xorynba00)
+// author: Orynbassar Abylaikhan (xorynba00)
 // Role: displays all events for a specific category
 // Includes filtering (all/upcoming/popular), sorting, and category banner UI 
 
