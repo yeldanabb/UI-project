@@ -1,3 +1,9 @@
+// Author: Polina
+// Role: SelectedCategoriesPage component
+// - Fetches events and categories based on selected category slugs from URL
+// - Filters and sorts events
+// - Displays breadcrumb, banner, filter buttons, and festival/event cards
+
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import "../styles/festival.css";
@@ -6,29 +12,28 @@ import type { Event, Category } from "../types/types";
 import { MapPinIcon } from "@heroicons/react/24/outline";
 
 export default function SelectedCategoriesPage() {
+  // State: events, categories, selectedCategorySlugs, filter
   const [searchParams] = useSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategorySlugs, setSelectedCategorySlugs] = useState<string[]>([]);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'popular'>('all');
-
+  // Effect: load categories and events based on selected slugs from URL
   useEffect(() => {
     const categorySlugsParam = searchParams.get('categories');
     if (categorySlugsParam) {
       const slugs = categorySlugsParam.split(',');
       setSelectedCategorySlugs(slugs);
-      
-      // Загружаем категории
+      // Fetch categories
       fetchCategories().then((res) => {
         setCategories(res.data);
       });
-
-      // Загружаем события для выбранных категорий
+      // Fetch events for selected categories
       Promise.all(
         slugs.map(slug => fetchEvents(slug))
       ).then(results => {
         const allEvents = results.flatMap(res => res.data);
-        // Убираем дубликаты по id
+        // Remove duplicates by id
         const uniqueEvents = Array.from(
           new Map(allEvents.map(event => [event.id, event])).values()
         );
@@ -36,11 +41,11 @@ export default function SelectedCategoriesPage() {
       }).catch(() => {});
     }
   }, [searchParams]);
-
+  // Derived data: selected category names
   const selectedCategoryNames = categories
     .filter(c => selectedCategorySlugs.includes(c.slug))
     .map(c => c.name);
-
+  // Filtering events by filter state
   const filteredEvents = events.filter(event => {
     if (filter === 'all') return true;
     if (filter === 'upcoming') {
@@ -49,7 +54,7 @@ export default function SelectedCategoriesPage() {
     }
     return true;
   });
-
+  // Sorting events by date
   const sortedEvents = [...filteredEvents].sort((a, b) => {
     const dateA = new Date(a.date).getTime();
     const dateB = new Date(b.date).getTime();
