@@ -1,31 +1,11 @@
-// One of the authors: Balseit Yeldana
-// Role: Inline event creation in Featured Events list
-// - Designed and implemented the draft-as-first-item user interaction pattern
-// - Created keyboard navigation system (Enter/Ctrl+Enter shortcuts)
-// - Developed real-time validation with visual feedback
-// - Implemented edit mode toggle for existing events
-// - Designed the visual feedback system (active field highlighting, status messages)
-// - Created the error handling and user notification system
-
-// Other parts of this file were implemented by Polina:
-// - CategoriesNavbar component usage and props handling
-// - Banner section (title, description, image)
-// - Map section and rendering of event locations
-// - Empty state message ("No existing events yet")
-// - editMode toggle button wrapper and header layout
-// - Featured events slicing and ordering (partially)
-// - Main JSX layout (sections, wrappers, and overall page structure)
-
-import { useEffect, useState, useRef, type KeyboardEvent } from "react";
-import "../styles/style_index.css";
-import { fetchEvents, createEvent, fetchCategories, updateEvent } from "../api/api";
+import { useEffect, useState, useRef } from "react";
+import { fetchEvents, fetchCategories, updateEvent } from "../api/api";
 import type { Event, Category } from "../types/types";
 import EventCard from "../components/EventCard";
-import CategoriesNavbar from "../components/CategoriesNavbar";
 import DraftEventCard from "../components/DraftEventCard";
 import Map from "../components/Map";
+import CategoriesNavbar from "../components/CategoriesNavbar";
 
-// Draft event type
 interface DraftEvent {
   id: string;
   title: string;
@@ -38,429 +18,216 @@ interface DraftEvent {
   external_links: string;
   isDraft: boolean;
   imageFile?: File | null;
-  contactInfo?: {
-    address: string;
-    phone: string;
-    email: string;
-  };
+  tags?: string[];
 }
 
+type LocalEvent = Event & { isFavorite?: boolean; isHidden?: boolean; tags?: string[] };
+
 export default function Home() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<LocalEvent[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false); 
-  
+
   const [draftEvent, setDraftEvent] = useState<DraftEvent>({
     id: `draft-${Date.now()}`,
     title: "",
-    category: 1, 
+    category: 1,
     categoryName: "",
     location: "",
-    date: new Date(Date.now() + 86400000).toISOString().split('T')[0], 
+    date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
     description: "",
     admission: "",
     external_links: "",
     isDraft: true,
     imageFile: null,
-    contactInfo: {
-      address: "",
-      phone: "",
-      email: ""
-    }
+    tags: []
   });
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeField, setActiveField] = useState<'title' | 'location' | 'date' | 'description'>('title');
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  
+
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "none">("asc");
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
+  const [tagSearch, setTagSearch] = useState("");
+
   const titleInputRef = useRef<HTMLInputElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-//Loading events and categories from API
   useEffect(() => {
     const loadData = async () => {
       try {
         const eventsResponse = await fetchEvents();
-        const sortedEvents = [...eventsResponse.data].sort((a, b) => {
-          if (a.created_at && b.created_at) {
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          }
-          return b.id - a.id;
-        });
-        
+        const sortedEvents = [...eventsResponse.data]
+          .map(ev => ({ ...ev, isFavorite: false, isHidden: false, tags: ev.tags || [] }))
+          .sort((a, b) => b.id - a.id);
         setEvents(sortedEvents);
-        
-        try {
-          const categoriesResponse = await fetchCategories();
-          
-          if (categoriesResponse.data && Array.isArray(categoriesResponse.data)) {
-            setCategories(categoriesResponse.data);
-      
-            if (categoriesResponse.data.length > 0) {
-              setDraftEvent(prev => ({
-                ...prev,
-                category: categoriesResponse.data[0].id,
-                categoryName: categoriesResponse.data[0].name
-              }));
-            } else {
-              useFallbackCategories();
-            }
-          } else {
-            useFallbackCategories();
+
+        const categoriesResponse = await fetchCategories();
+        if (categoriesResponse.data && Array.isArray(categoriesResponse.data)) {
+          setCategories(categoriesResponse.data);
+          if (categoriesResponse.data.length > 0) {
+            setDraftEvent(prev => ({
+              ...prev,
+              category: categoriesResponse.data[0].id,
+              categoryName: categoriesResponse.data[0].name
+            }));
           }
-        } catch (categoriesError) {
-          console.error("Error details:", categoriesError);
-          useFallbackCategories();
         }
-        
       } catch (error) {
-        useFallbackCategories();
+        console.error(error);
       } finally {
         setIsLoading(false);
       }
     };
-
-    const useFallbackCategories = () => {
-      const fallbackCategories: Category[] = [
-        { id: 1, name: "Sports", slug: "sports" },
-        { id: 2, name: "Music", slug: "music" },
-        { id: 3, name: "Art", slug: "art" },
-        { id: 4, name: "Food", slug: "food" },
-        { id: 5, name: "Tech", slug: "tech" },
-      ];
-      console.log("Using fallback categories:", fallbackCategories);
-      setCategories(fallbackCategories);
-      setDraftEvent(prev => ({
-        ...prev,
-        category: fallbackCategories[0].id,
-        categoryName: fallbackCategories[0].name
-      }));
-    };
-
     loadData();
   }, []);
 
-  useEffect(() => {
-    if (!isLoading && titleInputRef.current) {
-      setTimeout(() => {
-        titleInputRef.current?.focus();
-      }, 100);
-    }
-  }, [isLoading]);
-
   const handleDraftUpdate = (updates: Partial<DraftEvent>) => {
-    setDraftEvent({ ...draftEvent, ...updates });
-    if (validationError) {
-      setValidationError(null);
-    }
+    setDraftEvent(prev => ({ ...prev, ...updates }));
   };
 
-  const handleKeyPress = (e: KeyboardEvent, fieldName: string) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
-      e.preventDefault();
-      
-      switch (fieldName) {
-        case 'title':
-          setActiveField('location');
-          setTimeout(() => locationInputRef.current?.focus(), 10);
-          break;
-          
-        case 'location':
-          setActiveField('date');
-          setTimeout(() => dateInputRef.current?.focus(), 10);
-          break;
-          
-        case 'date':
-          setActiveField('description');
-          setTimeout(() => descriptionTextareaRef.current?.focus(), 10);
-          break;
-          
-        case 'description':
-          handleSaveDraft();
-          break;
-      }
-    }
-    
-    if (e.key === 'Enter' && e.ctrlKey) {
-      e.preventDefault();
-      handleSaveDraft();
-    }
-  };
+  const handleAddDraft = async () => {
+    if (!draftEvent.title || !draftEvent.location || !draftEvent.date) return;
 
-  const validateForm = (): boolean => {
-    if (!draftEvent.title.trim()) {
-      setValidationError("Please enter a title");
-      setActiveField('title');
-      setTimeout(() => titleInputRef.current?.focus(), 10);
-      return false;
-    }
-    if (!draftEvent.location.trim()) {
-      setValidationError("Please enter a location");
-      setActiveField('location');
-      setTimeout(() => locationInputRef.current?.focus(), 10);
-      return false;
-    }
-    if (!draftEvent.date.trim()) {
-      setValidationError("Please select a date");
-      setActiveField('date');
-      setTimeout(() => dateInputRef.current?.focus(), 10);
-      return false;
-    }
-    return true;
-  };
+    const newEvent: Event & { tags?: string[] } = {
+      id: Date.now(),
+      title: draftEvent.title,
+      category: { id: draftEvent.category, name: draftEvent.categoryName || "" },
+      location: draftEvent.location,
+      date: draftEvent.date,
+      description: draftEvent.description,
+      admission: draftEvent.admission,
+      external_links: draftEvent.external_links,
+      image: draftEvent.imageFile ? URL.createObjectURL(draftEvent.imageFile) : "",
+      tags: draftEvent.tags || []
+    };
 
-  const handleSaveDraft = async () => {
-    if (isSubmitting) return;
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setIsSubmitting(true);
-    setValidationError(null);
-    
-    try {
+    setEvents(prev => [newEvent, ...prev]);
 
-      const fd = new FormData();
-      fd.append("title", draftEvent.title);
-      fd.append("category", draftEvent.category.toString());
-      fd.append("location", draftEvent.location);
-      fd.append("date", draftEvent.date);
-      
-      if (draftEvent.description) fd.append("description", draftEvent.description);
-      if (draftEvent.admission) fd.append("admission", draftEvent.admission);
-      if (draftEvent.external_links) fd.append("external_links", draftEvent.external_links);
-      
-      if (draftEvent.imageFile) {
-        fd.append("image", draftEvent.imageFile);
-      }
-      const response = await createEvent(fd);
-      
-      setEvents(prev => {
-        const newEvents = [response.data, ...prev];
-        return newEvents;
-      });
-      
-      setShowSuccessMessage(true);
-      setTimeout(() => setShowSuccessMessage(false), 3000);
-      
-      setDraftEvent({
-        id: `draft-${Date.now()}`,
-        title: "",
-        category: categories[0]?.id || 1,
-        categoryName: categories[0]?.name || "",
-        location: "",
-        date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-        description: "",
-        admission: "",
-        external_links: "",
-        isDraft: true,
-        imageFile: null,
-        contactInfo: {
-          address: "",
-          phone: "",
-          email: ""
-        }
-      });
-      
-      setActiveField('title');
-      
-      console.log("Event created successfully:", response.data);
-      
-      setTimeout(() => {
-        titleInputRef.current?.focus();
-      }, 100);
-      
-    } catch (err: any) {
-      console.error("Event creation failed:", err);
-      const errorMessage = err.response?.data 
-        ? JSON.stringify(err.response.data)
-        : err.message || "Failed to create event.";
-      setValidationError(`Failed to create event: ${errorMessage}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCancelDraft = () => {
     setDraftEvent({
+      ...draftEvent,
       id: `draft-${Date.now()}`,
       title: "",
-      category: categories[0]?.id || 1,
-      categoryName: categories[0]?.name || "",
       location: "",
-      date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      date: new Date(Date.now() + 86400000).toISOString().split("T")[0],
       description: "",
       admission: "",
       external_links: "",
-      isDraft: true,
       imageFile: null,
-      contactInfo: {
-        address: "",
-        phone: "",
-        email: ""
-      }
+      tags: []
     });
-    
-    setActiveField('title');
-    
-    setValidationError(null);
-    
-    setTimeout(() => {
-      titleInputRef.current?.focus();
-    }, 100);
   };
 
-  const handleEventUpdate = async (updatedEvent: Event) => {
-    try {
-      const formData = new FormData();
-      
-      formData.append("title", updatedEvent.title);
-      formData.append("category", updatedEvent.category.toString());
-      formData.append("location", updatedEvent.location);
-      formData.append("date", updatedEvent.date);
-      
-      if (updatedEvent.description) formData.append("description", updatedEvent.description);
-      if (updatedEvent.admission) formData.append("admission", updatedEvent.admission);
-      if (updatedEvent.external_links) formData.append("external_links", updatedEvent.external_links);
-      
-      const response = await updateEvent(updatedEvent.id, formData);
-      
-      setEvents(prev => prev.map(ev => 
-        ev.id === updatedEvent.id ? response.data : ev
-      ));
-      
-      console.log("Event updated successfully:", response.data);
-      
-    } catch (error: any) {
-      console.error("Failed to update event:", error);
-      const errorMessage = error.response?.data 
-        ? JSON.stringify(error.response.data)
-        : error.message || "Failed to update event.";
-      throw new Error(`Failed to save: ${errorMessage}`);
-    }
+  const toggleFavorite = (id: number | string) => {
+    setEvents(prev => prev.map(ev => ev.id === id ? { ...ev, isFavorite: !ev.isFavorite } : ev));
   };
 
-  const featuredEvents = events.slice(0, 5);
-  
- // Role: Main JSX structure and rendering
-  // - CategoriesNavbar
-  // - Banner section
-  // - Featured events list and draft card
-  // - Empty state
-  if (isLoading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading events...</p>
-      </div>
-    );
-  }
+  const toggleHidden = (id: number | string) => {
+    setEvents(prev => prev.map(ev => ev.id === id ? { ...ev, isHidden: !ev.isHidden } : ev));
+  };
+
+  const hidePastEvents = () => {
+    const today = new Date();
+    setEvents(prev => prev.map(ev => new Date(ev.date) < today ? { ...ev, isHidden: true } : ev));
+  };
+
+  if (isLoading) return <div>Loading...</div>;
+
+  // **Фільтрація подій**
+  const filteredEvents = events
+    .filter(ev => !ev.isHidden)
+    .filter(ev => selectedCategory ? ev.category?.id === selectedCategory : true)
+    .filter(ev => showOnlyFavorites ? ev.isFavorite : true)
+    .filter(ev => {
+      if (!tagSearch.trim()) return true;
+      // Шукаємо тег по введеному тексту
+      return ev.tags?.some(tag => tag.toLowerCase().includes(tagSearch.toLowerCase()));
+    })
+    .sort((a, b) => {
+      if (sortOrder === "none") return 0;
+      return sortOrder === "asc"
+        ? new Date(a.date).getTime() - new Date(b.date).getTime()
+        : new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
 
   return (
     <>
-      <CategoriesNavbar 
-        selectedCategoryId={null}
-        isCreatingEvent={false}
-      />
+      <CategoriesNavbar selectedCategoryId={null} isCreatingEvent={false} />
 
-      {/* just title and description */}
       <div className="banner">
         <img src="./images/brnocity.jpeg" alt="City Banner" />
         <div className="banner-content">
           <h1>City Sync</h1>
-          <p className="banner-description">Your local events hub - Discover and create events in your city</p>
+          <p>Your local events hub - Discover and create events in your city</p>
         </div>
       </div>
 
-      <main>
-        <section className="home-content">
-          <div className="section-header">
-            <div className="header-row">
-              <div>
-                <h2>Featured Events</h2>
-                <p>Discover the most recent events happening in your city</p>
-              </div>
-              
-              <button 
-                className={`edit-mode-toggle ${editMode ? 'active' : ''}`}
-                onClick={() => setEditMode(!editMode)}
-                title={editMode ? "Exit edit mode" : "Enable edit mode"}
-              >
-                {editMode ? (
-                  <>
-                    <span className="edit-icon">✏️</span>
-                    Editing Mode • Click events to edit
-                  </>
-                ) : (
-                  <>
-                    <span className="edit-icon">✏️</span>
-                    Enable Editing
-                  </>
-                )}
-              </button>
-            </div>
-            
-            {showSuccessMessage && (
-              <div className="success-message">
-                Event created successfully! Start typing to create another...
-              </div>
-            )}
-          
-          </div>
-          
-          <div className="tiles">
-            {/* DRAFT EVENT CARD appears as first item */}
-            <DraftEventCard
-              draft={draftEvent}
-              onUpdate={handleDraftUpdate}
-              onSave={handleSaveDraft}
-              onCancel={handleCancelDraft}
-              isSubmitting={isSubmitting}
-              categories={categories}
-              activeField={activeField}
-              onKeyPress={handleKeyPress}
-              validationError={validationError}
-              titleInputRef={titleInputRef as React.RefObject<HTMLInputElement | null>}
-              locationInputRef={locationInputRef as React.RefObject<HTMLInputElement | null>}
-              dateInputRef={dateInputRef as React.RefObject<HTMLInputElement | null>}
-              descriptionTextareaRef={descriptionTextareaRef as React.RefObject<HTMLTextAreaElement | null>}
-            />
-            
-            {/* Show LAST (most recent first) */}
-            {featuredEvents.map((ev) => (
-              <EventCard 
-                key={ev.id} 
-                ev={ev} 
-                onUpdate={handleEventUpdate}
-                editMode={editMode}
-              />
-            ))}
-          </div>
-          
-          {/* Show if no events exist yet (except draft) */}
-          {events.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-state-icon">📅</div>
-              <h3>No existing events yet</h3>
-              <p>Create the first event by typing in the form above!</p>
-            </div>
-          )}
-        </section>
+      {/* FILTERS */}
+      <div style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 12,
+        margin: "16px 0",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#f5f5f5",
+        padding: 12,
+        borderRadius: 8,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.05)"
+      }}>
+        <button onClick={hidePastEvents} style={{background:"red", color:"white", border:"none", padding:"8px 16px", borderRadius:6, cursor:"pointer", fontWeight:600}}>Hide Past Events</button>
 
-        {/* Map section */}
-        <section className="home-content">
-          <div className="section-header">
-            <h2>Map of events</h2>
-            <p>Explore the upcoming events in Brno!</p>
+        <select value={selectedCategory ?? ""} onChange={e => setSelectedCategory(e.target.value ? Number(e.target.value) : null)}
+          style={{ padding:"8px 10px", borderRadius:6, border:"1px solid #ccc", fontSize:14, cursor:"pointer", minWidth:140 }}>
+          <option value="">All Categories</option>
+          {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+        </select>
+
+        <select value={sortOrder} onChange={e => setSortOrder(e.target.value as "asc" | "desc" | "none")}
+          style={{ padding:"8px 10px", borderRadius:6, border:"1px solid #ccc", fontSize:14, cursor:"pointer", minWidth:140 }}>
+          <option value="none">No date sorting</option>
+          <option value="asc">Date: Earliest First</option>
+          <option value="desc">Date: Latest First</option>
+        </select>
+
+        <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:14, cursor:"pointer" }}>
+          <input type="checkbox" checked={showOnlyFavorites} onChange={() => setShowOnlyFavorites(prev => !prev)} style={{width:16,height:16}} />
+          Favorites Only
+        </label>
+
+      </div>
+
+      {/* EVENTS + DRAFT */}
+      <div className="tiles" style={{ display:"flex", flexWrap:"wrap", gap:16, justifyContent:"flex-start" }}>
+        <DraftEventCard
+          draft={draftEvent}
+          onUpdate={handleDraftUpdate}
+          onSave={handleAddDraft}
+          categories={categories}
+          titleInputRef={titleInputRef}
+          locationInputRef={locationInputRef}
+          dateInputRef={dateInputRef}
+          descriptionTextareaRef={descriptionTextareaRef}
+          style={{ flex: "0 0 320px" }}
+        />
+
+        {filteredEvents.map(ev => (
+          <div key={ev.id} style={{ flex: "0 0 320px" }}>
+            <EventCard
+              ev={ev}
+              onUpdate={updateEvent}
+              onToggleFavorite={toggleFavorite}
+              onToggleHidden={toggleHidden}
+            />
           </div>
-          <Map events={events} />
-        </section>
-      </main>
+        ))}
+      </div>
+
+      {/* MAP */}
+      <section className="home-content" style={{ marginTop: 32 }}>
+        <h2>Map of events</h2>
+        <Map events={filteredEvents} />
+      </section>
     </>
   );
 }

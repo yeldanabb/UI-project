@@ -1,272 +1,162 @@
-// One of the authors: Balseit Yeldana (xbalsey00)
-// Role: Contextual Inline Editing System for Existing Events
-// Event card component implementing in-place editing functionality.
-// When edit mode is enabled, existing event cards become interactive
-// editing surfaces, allowing users to modify content without navigation
-// to separate forms or pages.
 import { useState, useRef, useEffect } from "react";
-import { CalendarIcon, MapPinIcon, PencilIcon, CheckIcon, XMarkIcon, LinkIcon } from "@heroicons/react/24/outline";
+import { CalendarIcon, MapPinIcon } from "@heroicons/react/24/outline";
 import type { Event } from "../types/types";
 
 interface EventCardProps {
-  ev: Event;
-  onUpdate?: (updatedEvent: Event) => Promise<void>;
-  editMode?: boolean;
+  ev: Event & { isFavorite?: boolean; isHidden?: boolean; tags?: string[]; isDraft?: boolean };
+  onUpdate?: (updatedEvent: Event & { tags?: string[] }) => Promise<void> | void;
+  onToggleFavorite?: (id: string | number) => void;
+  onToggleHidden?: (id: string | number) => void;
 }
 
-export default function EventCard({ ev, onUpdate, editMode = false }: EventCardProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedEvent, setEditedEvent] = useState<Event>({ ...ev });
-  const [isHovered, setIsHovered] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
+export default function EventCard({ ev, onUpdate, onToggleFavorite, onToggleHidden }: EventCardProps) {
+  const [local, setLocal] = useState<Event & { isFavorite?: boolean; isHidden?: boolean; tags?: string[] }>({ ...ev });
+  const [editingField, setEditingField] = useState<null | 'title' | 'description' | 'location' | 'date' | 'external_links'>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | undefined>(ev.image);
 
-  const img = ev.image || "/images/exhibition.jpg"; 
-  const imageUrl = img.startsWith("http") ? img : img.startsWith("/") ? img : `${import.meta.env.VITE_API_BASE?.replace('/api','') || 'http://127.0.0.1:8000'}${img}`;
+  const [localTags, setLocalTags] = useState<string[]>(ev.tags || []);
+  const [newTag, setNewTag] = useState("");
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-    } catch {
-      return dateString;
-    }
-  };
+  const titleRef = useRef<HTMLInputElement | null>(null);
+  const descRef = useRef<HTMLTextAreaElement | null>(null);
+  const locationRef = useRef<HTMLInputElement | null>(null);
+  const dateRef = useRef<HTMLInputElement | null>(null);
+  const linkRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => { 
+    setLocal({ ...ev }); 
+    setImagePreview(ev.image); 
+    setLocalTags(ev.tags || []); 
+  }, [ev]);
 
   useEffect(() => {
-    if (!editMode && isEditing) {
-      handleCancel(); 
-    }
-  }, [editMode]); 
+    if (!editingField) return;
+    const map: Record<string, any> = { title: titleRef, description: descRef, location: locationRef, date: dateRef, external_links: linkRef };
+    map[editingField]?.current?.focus();
+    if(editingField==='title'||editingField==='location') map[editingField]?.current?.select();
+  }, [editingField]);
 
-  useEffect(() => {
-    if (isEditing && titleInputRef.current) {
-      titleInputRef.current.focus();
-      titleInputRef.current.select();
+  const img = imagePreview || "/images/exhibition.jpg";
+  const imageUrl = img.startsWith("http") ? img : img.startsWith("/") ? img : `${import.meta.env.VITE_API_BASE?.replace('/api','') || ''}${img}`;
+  const stop = (e: React.MouseEvent | React.TouchEvent) => { e.stopPropagation(); };
+
+  const formatDate = (dateString="") => { try { return new Date(dateString).toLocaleDateString(undefined, {month:"short",day:"numeric",year:"numeric"}); } catch { return dateString; } };
+
+  const persist = async (patch: Partial<Event> & { tags?: string[] }) => {
+    setSaving(true); setError(null);
+    const updated = { ...local, ...patch } as typeof local;
+    if(!local.isDraft) {
+      if(!updated.title?.trim()){ setError("Title is required"); setSaving(false); return; }
+      if(!updated.location?.trim()){ setError("Location is required"); setSaving(false); return; }
+      if(!updated.date?.trim()){ setError("Date is required"); setSaving(false); return; }
     }
-  }, [isEditing]);
-  const handleEditClick = () => {
-    if (editMode && !isEditing) {
-      setIsEditing(true);
-      setSaveError(null);
+    setLocal(updated);
+    if(onUpdate){ 
+      try { 
+        const maybe = onUpdate(updated); 
+        if(maybe && typeof(maybe as Promise<void>).then==="function"){ await maybe as Promise<void>; } 
+      } catch(err:any){ console.error(err); setError(err?.message||"Failed to save"); setLocal({...ev}); } 
     }
-  };
-  const handleSave = async () => {
-    if (!onUpdate) {
-      setIsEditing(false);
-      return;
-    }
-    
-    setIsSaving(true);
-    setSaveError(null);
-    
-    try {
-      if (!editedEvent.title.trim()) {
-        setSaveError("Title is required");
-        titleInputRef.current?.focus();
-        setIsSaving(false);
-        return;
-      }
-      
-      if (!editedEvent.location.trim()) {
-        setSaveError("Location is required");
-        setIsSaving(false);
-        return;
-      }
-      
-      if (!editedEvent.date.trim()) {
-        setSaveError("Date is required");
-        setIsSaving(false);
-        return;
-      }
-      
-      await onUpdate(editedEvent);
-      setIsEditing(false);
-    } catch (error: any) {
-      setSaveError(error.message || "Failed to save changes. Please try again.");
-      console.error("Save error:", error);
-    } finally {
-      setIsSaving(false);
-    }
+    setSaving(false);
   };
 
-  const handleCancel = () => {
-    setEditedEvent({ ...ev });
-    setIsEditing(false);
-    setSaveError(null);
+  const handleFieldBlur = (field:keyof Event,value:string)=>{ setEditingField(null); if((ev as any)[field]!==value) persist({[field]:value}); };
+  const handleKey = (e:React.KeyboardEvent,field:keyof Event)=>{ if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){ e.preventDefault(); (e.target as HTMLElement).blur(); } else if(e.key==="Escape"){ setLocal(prev=>({...prev,[field]:(ev as any)[field]} as Event)); setEditingField(null); } };
+  const handleImageClick=(e:React.MouseEvent)=>{ e.stopPropagation(); fileInputRef.current?.click(); };
+  const handleFileChange=async(e:React.ChangeEvent<HTMLInputElement>)=>{ 
+    e.stopPropagation(); 
+    const f=e.target.files?.[0]; 
+    if(!f) return; 
+    const url=URL.createObjectURL(f); 
+    setImagePreview(url); 
+    const reader=new FileReader(); 
+    reader.onload=async()=>{ 
+      const base64=reader.result as string; 
+      setLocal(prev=>({...prev,image:base64})); 
+      await persist({...local,image:base64}); 
+    }; 
+    reader.readAsDataURL(f); 
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === 'Escape') {
-      handleCancel();
-    }
+  const addTag = async ()=>{ 
+    const t = newTag.trim(); 
+    if(!t) return; 
+    if(localTags.includes(t)) return; 
+    const updatedTags=[...localTags,t]; 
+    setLocalTags(updatedTags); 
+    setNewTag("");   
+    persist({ tags: updatedTags }); 
   };
 
-  const handleCardClick = () => {
-    if (editMode && !isEditing) {
-      setIsEditing(true);
-      return;
-    }
-    
-    if (!editMode && ev.external_links && !isEditing) {
-      window.open(ev.external_links, '_blank', 'noopener,noreferrer');
-    }
+  const removeTag = (tagToRemove: string) => {
+    const updatedTags = localTags.filter(t => t !== tagToRemove);
+    setLocalTags(updatedTags);
+    persist({ tags: updatedTags });
   };
 
-  const handleFieldChange = (field: keyof Event, value: string) => {
-    setEditedEvent(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  if(local.isHidden && !local.isDraft) return null;
+
+  const invisibleInputStyle:React.CSSProperties={ border:"none",background:"transparent",padding:0,margin:0,font:"inherit",color:"inherit",outline:"none",width:"100%",boxSizing:"border-box",lineHeight:"inherit" };
 
   return (
-    <div 
-      className={`tile ${isEditing ? 'editing' : ''} ${editMode && !isEditing ? 'edit-mode-active' : ''}`}
-      onClick={handleCardClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{ 
-        cursor: (editMode && !isEditing) || (ev.external_links && !editMode && !isEditing) ? 'pointer' : 'default' 
-      }}
-    >
-      <div className="tile-image-wrapper">
-        <img src={imageUrl} alt={ev.title} />
-        <div className="tile-category-badge">{ev.category.name}</div>
-        
-        {/* Edit mode indicator - only show when editMode is true AND not editing */}
-        {editMode && !isEditing && isHovered && (
-          <div className="edit-mode-hint">
-            <PencilIcon style={{ width: '12px', height: '12px' }} />
-            <span>Click to edit</span>
-          </div>
-        )}
-        
-        {/* Normal mode link indicator - only show when editMode is false */}
-        {!editMode && ev.external_links && isHovered && !isEditing && (
-          <div className="link-mode-hint">
-            <LinkIcon style={{ width: '12px', height: '12px' }} />
-            <span>Click to visit</span>
-          </div>
-        )}
+    <article className="tile" role="article" aria-label={`Event ${local.title}`} style={{cursor:"default"}}>
+      <div className="tile-image-wrapper" style={{position:"relative"}}>
+        <img src={imageUrl} alt={local.title} style={{display:"block",width:"100%",height:"auto",objectFit:"cover"}} onClick={handleImageClick}/>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleFileChange}/>
+        <div className="tile-category-badge">{local.category?.name}</div>
       </div>
-      
-      <div className="tile-content">
-        {/* Title field - editable when in edit mode */}
-        {isEditing ? (
-          <div className="edit-field">
-            <input
-              ref={titleInputRef}
-              type="text"
-              value={editedEvent.title}
-              onChange={(e) => handleFieldChange('title', e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="edit-title-input"
-              placeholder="Event title"
-              disabled={isSaving}
-            />
-          </div>
-        ) : (
-          <h3>{ev.title}</h3>
-        )}
 
-        <div className="tile-meta">
-          <span className="tile-location">
-            <MapPinIcon style={{ width: '14px', height: '14px', display: 'inline-block', marginRight: '4px', verticalAlign: 'middle' }} /> 
-            {ev.location}
+      <div className="tile-content">
+        {editingField==='title'?<input ref={titleRef} value={local.title||""} onChange={e=>setLocal(prev=>({...prev,title:e.target.value}))} onBlur={e=>handleFieldBlur('title',e.target.value)} onKeyDown={e=>handleKey(e,'title')} style={{...invisibleInputStyle,fontWeight:600}} onClick={stop}/>:
+        <h3 onClick={()=>setEditingField('title')} style={{cursor:"text",margin:0}}>{local.title}</h3>}
+
+        {editingField==='description'?<textarea ref={descRef} value={local.description||""} onChange={e=>setLocal(prev=>({...prev,description:e.target.value}))} onBlur={e=>handleFieldBlur('description',e.target.value)} onKeyDown={e=>handleKey(e,'description')} rows={3} style={{...invisibleInputStyle,resize:"vertical"}} onClick={stop}/>:
+        local.description&&<p onClick={()=>setEditingField('description')} style={{cursor:"text",marginTop:8}}>{local.description.substring(0,300)}</p>}
+
+        <div className="tile-meta" style={{display:"flex",gap:12,alignItems:"center",marginTop:8}}>
+          <span style={{display:"flex",alignItems:"center",gap:6}}>
+            <MapPinIcon style={{width:14,height:14}}/>
+            {editingField==='location'?<input ref={locationRef} value={local.location||""} onChange={e=>setLocal(prev=>({...prev,location:e.target.value}))} onBlur={e=>handleFieldBlur('location',e.target.value)} onKeyDown={e=>handleKey(e,'location')} style={invisibleInputStyle} onClick={stop}/>:
+            <span onClick={()=>setEditingField('location')} style={{cursor:"text"}}>{local.location}</span>}
           </span>
-          <span className="tile-date">
-            <CalendarIcon style={{ width: '14px', height: '14px', display: 'inline-block', marginRight: '4px', verticalAlign: 'middle' }} /> 
-            {formatDate(ev.date)}
+
+          <span style={{display:"flex",alignItems:"center",gap:6}}>
+            <CalendarIcon style={{width:14,height:14}}/>
+            {editingField==='date'?<input ref={dateRef} type="date" value={local.date?.split("T")[0]||""} onChange={e=>setLocal(prev=>({...prev,date:e.target.value}))} onBlur={e=>handleFieldBlur('date',e.target.value)} onKeyDown={e=>handleKey(e,'date')} style={invisibleInputStyle} onClick={stop}/>:
+            <span onClick={()=>setEditingField('date')} style={{cursor:"text"}}>{formatDate(local.date)}</span>}
           </span>
         </div>
 
-        {/* Description field - editable when in edit mode */}
-        {isEditing ? (
-          <div className="edit-field">
-            <textarea
-              ref={descriptionTextareaRef}
-              value={editedEvent.description || ''}
-              onChange={(e) => handleFieldChange('description', e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="edit-description-textarea"
-              placeholder="Event description"
-              rows={3}
-              disabled={isSaving}
-            />
-            
-            {/* External link field */}
-            <div className="edit-field">
-              <input
-                type="text"
-                value={editedEvent.external_links || ''}
-                onChange={(e) => handleFieldChange('external_links', e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="edit-link-input"
-                placeholder="External link (optional)"
-                disabled={isSaving}
-              />
-            </div>
-          </div>
-        ) : (
-          <>
-            {ev.description && (
-              <p className="tile-description">
-                {ev.description.substring(0, 300)}
-              </p>
-            )}
-          </>
-        )}
+        <div style={{marginTop:6}}>
+          {editingField==='external_links'?<input ref={linkRef} value={local.external_links||""} onChange={e=>setLocal(prev=>({...prev,external_links:e.target.value}))} onBlur={e=>handleFieldBlur('external_links',e.target.value)} onKeyDown={e=>handleKey(e,'external_links')} style={invisibleInputStyle}/>:
+          local.external_links&&<a href={local.external_links} target="_blank" rel="noopener noreferrer" onClick={stop} style={{color:"#0066cc",textDecoration:"underline",fontSize:14}}>Event Link</a>}
+        </div>
 
-        {/* Save error message */}
-        {saveError && (
-          <div className="save-error-message">
-            ⚠️ {saveError}
-          </div>
-        )}
+        {/* TAGS */}
+        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {localTags.map(tag => (
+            <span key={tag} style={{ background:"#eee", padding:"4px 8px", borderRadius:4, fontSize:12, display:"inline-flex", alignItems:"center", gap:4 }}>
+              {tag}
+              <span onClick={() => removeTag(tag)} style={{ cursor:"pointer", color:"#000", fontWeight:600, lineHeight:1 }}>✕</span>
+            </span>
+          ))}
+          <input
+            value={newTag}
+            onChange={e => setNewTag(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addTag()}
+            placeholder="Add tag"
+            style={{ border:"1px solid #ccc", borderRadius:4, padding:"2px 6px", fontSize:12, width:80 }}
+          />
+        </div>
 
-        {/* Edit mode actions - only show when isEditing is true */}
-        {isEditing && editMode && (
-          <div className="edit-actions">
-            <button 
-              className="edit-save-button"
-              onClick={handleSave}
-              disabled={isSaving}
-              title="Save (Enter)"
-            >
-              {isSaving ? (
-                <>
-                  <div className="saving-spinner"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <CheckIcon style={{ width: '16px', height: '16px' }} />
-                  Save
-                </>
-              )}
-            </button>
-            <button 
-              className="edit-cancel-button"
-              onClick={handleCancel}
-              disabled={isSaving}
-              title="Cancel (Esc)"
-            >
-              <XMarkIcon style={{ width: '16px', height: '16px' }} />
-              Cancel
-            </button>
-          </div>
-        )}
+        <div style={{marginTop:10,display:"flex",gap:8}} onClick={stop}>
+          <button type="button" onClick={()=>onToggleFavorite?.(local.id)} title={local.isFavorite?"Remove favorite":"Mark favorite"} style={{width:32,height:32,border:"2px solid red",borderRadius:6,background:local.isFavorite?"red":"transparent",color:local.isFavorite?"white":"red",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s"}}>{local.isFavorite?"♥":"♡"}</button>
+          <button type="button" onClick={()=>onToggleHidden?.(local.id)} title={local.isHidden?"Unhide event":"Hide event"} style={{width:32,height:32,border:"2px solid red",borderRadius:6,background:local.isHidden?"red":"transparent",color:local.isHidden?"white":"red",fontWeight:600,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s"}}>Hide</button>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }

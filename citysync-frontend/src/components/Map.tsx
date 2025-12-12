@@ -1,8 +1,3 @@
-// Author: Orynbassar Abylaikhan (xorynba00)
-// Role: Display upcoming events on an interactive map so users can quickly understand how far each event is from them.
-// Notes: It shows how this component convertes text addresses into coordinates to show events on the map which was quite interesting
-// All logic in this component was implemented solely by the author.
-
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Icon } from "leaflet";
@@ -13,16 +8,13 @@ import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 
-// Override default Leaflet marker icons with imported image URLs
+// Override default Leaflet marker icons
 delete (Icon.Default.prototype as any)._getIconUrl;
-Icon.Default.mergeOptions({
-  iconRetinaUrl,
-  iconUrl,
-  shadowUrl,
-});
+Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
 interface MapProps {
   events: Event[];
+  cityFilter?: string; // Опційний фільтр по місту
 }
 
 interface EventLocation {
@@ -34,120 +26,59 @@ interface EventLocation {
 const BRNO_CENTER: [number, number] = [49.1951, 16.6068];
 const geocodeCache: Record<string, [number, number]> = {};
 
-// Main function which recieves a list of events
-export default function Map({ events }: MapProps) {
-  // Stores geocoded event locations 
+export default function Map({ events, cityFilter }: MapProps) {
   const [eventLocations, setEventLocations] = useState<EventLocation[]>([]);
-  // Loading indicator while geocoding
   const [isGeocoding, setIsGeocoding] = useState(false);
 
-  // recieves a location string and returns coordinates
-  const geocodeLocation = async (location: string): Promise<[number, number] | null> => {
-    // convertes location and ensures consistent caching
-    // if it was already geocoded it returnes cached coordinates
+  // Геокодування адреси
+  const geocodeLocation = async (location: string): Promise<[number, number]> => {
     const cacheKey = location.toLowerCase().trim();
-    if (geocodeCache[cacheKey]) {
-      return geocodeCache[cacheKey];
-    }
+    if (geocodeCache[cacheKey]) return geocodeCache[cacheKey];
 
     try {
-      // request is being sent to Nominatim search endpoint and returns the best match
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location + ", Brno, Czech Republic")}&limit=1`,
-        {
-          headers: {
-            //required by Nominatim to identify app
-            "User-Agent": "CitySync/1.0"
-          }
-        }
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`,
+        { headers: { "User-Agent": "CitySync/1.0" } }
       );
-
-      // Converts JSON responce to an object, returned API extracts coordinates and stores them in cache
       const data = await response.json();
       if (data && data.length > 0) {
         const coords: [number, number] = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
         geocodeCache[cacheKey] = coords;
         return coords;
       }
-
-      // Fallback if API returns no results
-      const fallback = BRNO_CENTER;
-      geocodeCache[cacheKey] = fallback;
-      return fallback;
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      const fallback = BRNO_CENTER;
-      geocodeCache[cacheKey] = fallback;
-      return fallback;
+      return BRNO_CENTER;
+    } catch {
+      return BRNO_CENTER;
     }
   };
 
   useEffect(() => {
-    // Main async function that handles geocoding workflow
-    const geocodeEvents = async () => {
-      if (events.length === 0) {
+    const geocodeAllEvents = async () => {
+      if (!events.length) {
         setEventLocations([]);
         return;
       }
 
       setIsGeocoding(true);
 
-      // Group events by unique normalized location
-      const uniqueLocations: Record<string, Event[]> = {};
-      events.forEach(event => {
-        const key = event.location.toLowerCase().trim();
-        if (!uniqueLocations[key]) {
-          uniqueLocations[key] = [];
-        }
-        uniqueLocations[key].push(event);
-      });
+      const filteredEvents = cityFilter
+        ? events.filter(ev => ev.location.toLowerCase().includes(cityFilter.toLowerCase()))
+        : events;
 
-      // Storing coordinates
-      const locationCoords: Record<string, [number, number]> = {};
-      const locationKeys = Object.keys(uniqueLocations);
+      const locations: EventLocation[] = [];
 
-      // Geocode each unique location one-by-one 
-      for (let i = 0; i < locationKeys.length; i++) {
-        const locationKey = locationKeys[i];
-        // Take any event from the group and get location text
-        const coords = await geocodeLocation(uniqueLocations[locationKey][0].location);
-
-        // Save coordinates 
-        if (coords) {
-          locationCoords[locationKey] = coords;
-        }
-
-        // If location wasn't in cache wait 1 second to avoid API rate limits
-        if (i < locationKeys.length - 1 && !geocodeCache[locationKey]) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+      for (const ev of filteredEvents) {
+        const coords = await geocodeLocation(ev.location);
+        locations.push({ event: ev, lat: coords[0], lng: coords[1] });
       }
 
-      // Convert geocoded results back to event entries
-      const geocodedLocations: EventLocation[] = [];
-      events.forEach(event => {
-        const key = event.location.toLowerCase().trim();
-        const coords = locationCoords[key];
-
-        // Add coordinates and event info to final array
-        if (coords) {
-          geocodedLocations.push({
-            event,
-            lat: coords[0],
-            lng: coords[1],
-          });
-        }
-      });
-
-      setEventLocations(geocodedLocations);
+      setEventLocations(locations);
       setIsGeocoding(false);
     };
 
-    geocodeEvents();
-  }, [events]);
+    geocodeAllEvents();
+  }, [events, cityFilter]);
 
-
-  // Helper to format event dates in a readable style
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -162,8 +93,6 @@ export default function Map({ events }: MapProps) {
   };
 
   return (
-
-    // Map wrapper and loading indicator
     <div style={{ width: "100%", height: "500px", position: "relative", borderRadius: "20px", overflow: "hidden", boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)" }}>
       {isGeocoding && (
         <div style={{
@@ -181,58 +110,26 @@ export default function Map({ events }: MapProps) {
         </div>
       )}
 
-      {/* Core leaflet map instance */}
-      <MapContainer
-        center={BRNO_CENTER}
-        zoom={13}
-        style={{ height: "100%", width: "100%", zIndex: 1 }}
-        scrollWheelZoom={true}
-      >
-        {/* Base OpenStreetMap tiles */}
+      <MapContainer center={BRNO_CENTER} zoom={13} style={{ height: "100%", width: "100%" }}>
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Render a marker for each event and popup event details */}
-        {eventLocations.map((eventLocation) => (
-          <Marker
-            key={eventLocation.event.id}
-            position={[eventLocation.lat, eventLocation.lng]}
-          >
+        {eventLocations.map((loc) => (
+          <Marker key={loc.event.id} position={[loc.lat, loc.lng]}>
             <Popup>
               <div style={{ minWidth: "200px" }}>
-                <h3 style={{ margin: "0 0 8px 0", fontSize: "16px", fontWeight: "bold" }}>
-                  {eventLocation.event.title}
-                </h3>
-                <p style={{ margin: "4px 0", fontSize: "14px", color: "#666", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <MapPin size={14} />
-                  {eventLocation.event.location}
+                <h3 style={{ margin: 0 }}>{loc.event.title}</h3>
+                <p style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <MapPin size={14} /> {loc.event.location}
                 </p>
-                <p style={{ margin: "4px 0", fontSize: "14px", color: "#666", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Calendar size={14} />
-                  {formatDate(eventLocation.event.date)}
+                <p style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Calendar size={14} /> {formatDate(loc.event.date)}
                 </p>
-                {eventLocation.event.category && (
-                  <p style={{ margin: "4px 0", fontSize: "12px", color: "#888" }}>
-                    {eventLocation.event.category.name}
-                  </p>
-                )}
-                {eventLocation.event.external_links && (
-                  <a
-                    href={eventLocation.event.external_links}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: "inline-block",
-                      marginTop: "4px",
-                      color: "#0066cc",
-                      textDecoration: "underline",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Click to see the event!
+                {loc.event.external_links && (
+                  <a href={loc.event.external_links} target="_blank" rel="noopener noreferrer">
+                    See event
                   </a>
                 )}
               </div>
@@ -243,4 +140,3 @@ export default function Map({ events }: MapProps) {
     </div>
   );
 }
-
