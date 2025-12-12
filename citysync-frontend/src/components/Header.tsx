@@ -1,3 +1,11 @@
+// One of the authors: Orynbassar Abylaikhan (xorynba00)
+// Notes: There was a suggested idea of creating a filter where you can choose one or more categories,
+//        so you will be redirected to new page, which will consist all of the events of those categories
+//        Interesting detail: initially, even selecting a single category triggered the multi-category URL,
+//        causing a mismatch between the navigation bar url and the filter’s url state.
+//        This was later fixed so that selecting one category redirects to its proper category page,
+//        while selecting multiple categories uses the combined category url.
+
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { fetchCategories } from "../api/api";
@@ -10,6 +18,7 @@ export default function Header() {
     return typeof window !== 'undefined' && window.innerWidth > 768;
   });
   const [isMobile, setIsMobile] = useState(false);
+  // Tracks which categories are selected (checkbox states)
   const [categoryStatuses, setCategoryStatuses] = useState<Record<number, boolean>>({});
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,9 +37,9 @@ export default function Header() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Синхронизация выбранной категории с текущим роутом
+  // Synchronizes selected checkboxes with the URL
   useEffect(() => {
-    // Проверяем, находимся ли мы на странице категории
+    // Checks if we are on a single-category page: /category/:slug
     const categoryMatch = location.pathname.match(/^\/category\/([^/]+)$/);
     
     if (categoryMatch) {
@@ -38,14 +47,13 @@ export default function Header() {
       const category = categories.find(c => c.slug === categorySlug);
       
       if (category) {
-        // Выбираем только эту категорию
+        // When ONE category is selected, ONLY that category should be active
         const newStatuses: Record<number, boolean> = {};
         newStatuses[category.id] = true;
         setCategoryStatuses(newStatuses);
       }
     } else {
-      // Если не на странице категории, сбрасываем выбор
-      // Но только если мы не на странице selected-categories
+      // If not on category page, reset unless on multi-category selection page
       if (!location.pathname.startsWith('/selected-categories')) {
         setCategoryStatuses({});
       }
@@ -125,7 +133,7 @@ export default function Header() {
       .map(key => Number(key));
     
     if (selectedCategoryIds.length > 0) {
-      // Если выбрана только одна категория, переходим на её страницу
+      // Single category → redirect to /category/:slug
       if (selectedCategoryIds.length === 1) {
         const category = categories.find(c => c.id === selectedCategoryIds[0]);
         if (category) {
@@ -135,7 +143,7 @@ export default function Header() {
         }
       }
       
-      // Если выбрано несколько категорий, переходим на страницу selected-categories
+      // Multiple categories → redirect to /selected-categories?categories=
       const selectedSlugs = categories
         .filter(c => selectedCategoryIds.includes(c.id))
         .map(c => c.slug)

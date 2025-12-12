@@ -1,3 +1,8 @@
+// Author: Sevastianova Polina
+// Description: This component renders the footer section of the website.
+// It displays contact information, social media icons, and a link to the
+// "Who we are" page. Styling is applied from an external CSS file.
+
 import "../styles/style_index.css";
 
 export default function Footer() {

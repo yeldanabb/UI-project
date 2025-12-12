@@ -1,3 +1,13 @@
+/*
+Author: Orynbassar Abylaikhan
+Contributions:
+- Developed the EventDetail page, including fetching a single event by ID.
+- Implemented fetching and displaying recommended events based on the current event's category.
+- Created reviews system: displaying existing reviews, adding new reviews, calculating average rating, and storing reviews in localStorage.
+- Designed UI interactions such as review form toggle, star rating input, and back navigation using React Router.
+- Managed conditional rendering for event details, contact information, external links, and recommendations carousel.
+*/
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { fetchEvent, fetchEvents } from "../api/api";

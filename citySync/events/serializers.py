@@ -38,7 +38,7 @@ class EventSerializer(serializers.ModelSerializer):
             'contact_info_details', 
             'created_at'
         ]
-        read_only_fields = ['created_at'] 
+        read_only_fields = ['created_at', 'image_url', 'category_name', 'category_slug', 'contact_info_details']
     
     def get_image_url(self, obj):
         if obj.image:
@@ -47,9 +47,3 @@ class EventSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
         return None
-    
-    def create(self, validated_data):
-        return super().create(validated_data)
-    
-    def update(self, instance, validated_data):
-        return super().update(instance, validated_data)

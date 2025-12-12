@@ -20,7 +20,10 @@ export const createEvent = (formData: FormData) =>
   api.post("/events/", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-
+export const updateEvent = (id: number, data: any) => 
+  api.patch(`/events/${id}/`, data, {
+    headers: { "Content-Type": "application/json" },
+  });
 export const createContactInfo = (contactData: {
   address: string;
   phone: string;

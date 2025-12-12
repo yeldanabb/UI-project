@@ -1,8 +1,28 @@
-import { CalendarIcon, MapPinIcon } from "@heroicons/react/24/outline";
+// One of the authors: Balseit Yeldana (xbalsey00)
+// Role: Contextual Inline Editing System for Existing Events
+// Event card component implementing in-place editing functionality.
+// When edit mode is enabled, existing event cards become interactive
+// editing surfaces, allowing users to modify content without navigation
+// to separate forms or pages.
+import { useState, useRef, useEffect } from "react";
+import { CalendarIcon, MapPinIcon, PencilIcon, CheckIcon, XMarkIcon, LinkIcon } from "@heroicons/react/24/outline";
 import type { Event } from "../types/types";
-import { Link } from "react-router-dom";
 
-export default function EventCard({ ev }: { ev: Event }) {
+interface EventCardProps {
+  ev: Event;
+  onUpdate?: (updatedEvent: Event) => Promise<void>;
+  editMode?: boolean;
+}
+
+export default function EventCard({ ev, onUpdate, editMode = false }: EventCardProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedEvent, setEditedEvent] = useState<Event>({ ...ev });
+  const [isHovered, setIsHovered] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const descriptionTextareaRef = useRef<HTMLTextAreaElement>(null);
+
   const img = ev.image || "/images/exhibition.jpg"; 
   const imageUrl = img.startsWith("http") ? img : img.startsWith("/") ? img : `${import.meta.env.VITE_API_BASE?.replace('/api','') || 'http://127.0.0.1:8000'}${img}`;
 
@@ -19,22 +39,233 @@ export default function EventCard({ ev }: { ev: Event }) {
     }
   };
 
+  useEffect(() => {
+    if (!editMode && isEditing) {
+      handleCancel(); 
+    }
+  }, [editMode]); 
+
+  useEffect(() => {
+    if (isEditing && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditing]);
+  const handleEditClick = () => {
+    if (editMode && !isEditing) {
+      setIsEditing(true);
+      setSaveError(null);
+    }
+  };
+  const handleSave = async () => {
+    if (!onUpdate) {
+      setIsEditing(false);
+      return;
+    }
+    
+    setIsSaving(true);
+    setSaveError(null);
+    
+    try {
+      if (!editedEvent.title.trim()) {
+        setSaveError("Title is required");
+        titleInputRef.current?.focus();
+        setIsSaving(false);
+        return;
+      }
+      
+      if (!editedEvent.location.trim()) {
+        setSaveError("Location is required");
+        setIsSaving(false);
+        return;
+      }
+      
+      if (!editedEvent.date.trim()) {
+        setSaveError("Date is required");
+        setIsSaving(false);
+        return;
+      }
+      
+      await onUpdate(editedEvent);
+      setIsEditing(false);
+    } catch (error: any) {
+      setSaveError(error.message || "Failed to save changes. Please try again.");
+      console.error("Save error:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedEvent({ ...ev });
+    setIsEditing(false);
+    setSaveError(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  const handleCardClick = () => {
+    if (editMode && !isEditing) {
+      setIsEditing(true);
+      return;
+    }
+    
+    if (!editMode && ev.external_links && !isEditing) {
+      window.open(ev.external_links, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleFieldChange = (field: keyof Event, value: string) => {
+    setEditedEvent(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   return (
-    <div className="tile">
+    <div 
+      className={`tile ${isEditing ? 'editing' : ''} ${editMode && !isEditing ? 'edit-mode-active' : ''}`}
+      onClick={handleCardClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ 
+        cursor: (editMode && !isEditing) || (ev.external_links && !editMode && !isEditing) ? 'pointer' : 'default' 
+      }}
+    >
       <div className="tile-image-wrapper">
         <img src={imageUrl} alt={ev.title} />
         <div className="tile-category-badge">{ev.category.name}</div>
-      </div>
-      <div className="tile-content">
-        <h3>{ev.title}</h3>
-        <div className="tile-meta">
-          <span className="tile-location"><MapPinIcon style={{ width: '14px', height: '14px', display: 'inline-block', marginRight: '4px', verticalAlign: 'middle' }} /> {ev.location}</span>
-          <span className="tile-date"><CalendarIcon style={{ width: '14px', height: '14px', display: 'inline-block', marginRight: '4px', verticalAlign: 'middle' }} /> {formatDate(ev.date)}</span>
-        </div>
-        {ev.description && (
-          <p className="tile-description">{ev.description.substring(0, 120)}...</p>
+        
+        {/* Edit mode indicator - only show when editMode is true AND not editing */}
+        {editMode && !isEditing && isHovered && (
+          <div className="edit-mode-hint">
+            <PencilIcon style={{ width: '12px', height: '12px' }} />
+            <span>Click to edit</span>
+          </div>
         )}
-        <button><Link to={`/events/${ev.id}`}>View Details</Link></button>
+        
+        {/* Normal mode link indicator - only show when editMode is false */}
+        {!editMode && ev.external_links && isHovered && !isEditing && (
+          <div className="link-mode-hint">
+            <LinkIcon style={{ width: '12px', height: '12px' }} />
+            <span>Click to visit</span>
+          </div>
+        )}
+      </div>
+      
+      <div className="tile-content">
+        {/* Title field - editable when in edit mode */}
+        {isEditing ? (
+          <div className="edit-field">
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={editedEvent.title}
+              onChange={(e) => handleFieldChange('title', e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="edit-title-input"
+              placeholder="Event title"
+              disabled={isSaving}
+            />
+          </div>
+        ) : (
+          <h3>{ev.title}</h3>
+        )}
+
+        <div className="tile-meta">
+          <span className="tile-location">
+            <MapPinIcon style={{ width: '14px', height: '14px', display: 'inline-block', marginRight: '4px', verticalAlign: 'middle' }} /> 
+            {ev.location}
+          </span>
+          <span className="tile-date">
+            <CalendarIcon style={{ width: '14px', height: '14px', display: 'inline-block', marginRight: '4px', verticalAlign: 'middle' }} /> 
+            {formatDate(ev.date)}
+          </span>
+        </div>
+
+        {/* Description field - editable when in edit mode */}
+        {isEditing ? (
+          <div className="edit-field">
+            <textarea
+              ref={descriptionTextareaRef}
+              value={editedEvent.description || ''}
+              onChange={(e) => handleFieldChange('description', e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="edit-description-textarea"
+              placeholder="Event description"
+              rows={3}
+              disabled={isSaving}
+            />
+            
+            {/* External link field */}
+            <div className="edit-field">
+              <input
+                type="text"
+                value={editedEvent.external_links || ''}
+                onChange={(e) => handleFieldChange('external_links', e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="edit-link-input"
+                placeholder="External link (optional)"
+                disabled={isSaving}
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            {ev.description && (
+              <p className="tile-description">
+                {ev.description.substring(0, 300)}
+              </p>
+            )}
+          </>
+        )}
+
+        {/* Save error message */}
+        {saveError && (
+          <div className="save-error-message">
+            ⚠️ {saveError}
+          </div>
+        )}
+
+        {/* Edit mode actions - only show when isEditing is true */}
+        {isEditing && editMode && (
+          <div className="edit-actions">
+            <button 
+              className="edit-save-button"
+              onClick={handleSave}
+              disabled={isSaving}
+              title="Save (Enter)"
+            >
+              {isSaving ? (
+                <>
+                  <div className="saving-spinner"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckIcon style={{ width: '16px', height: '16px' }} />
+                  Save
+                </>
+              )}
+            </button>
+            <button 
+              className="edit-cancel-button"
+              onClick={handleCancel}
+              disabled={isSaving}
+              title="Cancel (Esc)"
+            >
+              <XMarkIcon style={{ width: '16px', height: '16px' }} />
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
