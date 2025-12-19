@@ -8,6 +8,9 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ContactInfoSerializer(serializers.ModelSerializer):
+    """
+    Converts Category model instances into JSON format.
+    """
     class Meta:
         model = ContactInfo
         fields = '__all__'

@@ -20,7 +20,8 @@ export const createEvent = (formData: FormData) =>
   api.post("/events/", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-export const updateEvent = (id: number, data: any) => 
+  // patch - we can renew one field
+export const updateEvent = (id: number | string, data: any) => 
   api.patch(`/events/${id}/`, data, {
     headers: { "Content-Type": "application/json" },
   });
@@ -29,3 +30,4 @@ export const createContactInfo = (contactData: {
   phone: string;
   email: string;
 }) => api.post("/contact/", contactData);
+export const deleteEvent = (id: number | string) => api.delete(`/events/${id}/`);

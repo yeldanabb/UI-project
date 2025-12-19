@@ -1,6 +1,7 @@
 from django.db import models
 
 class Category(models.Model):
+    # This table stores event categories
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
     
@@ -11,6 +12,7 @@ class Category(models.Model):
         return self.name
     
 class ContactInfo(models.Model):
+    # 2. This table stores contact information
     address = models.TextField()
     phone = models.CharField(max_length=20)
     email = models.EmailField()
@@ -25,11 +27,12 @@ class ContactInfo(models.Model):
         return f"{self.phone} - {self.address[:30]}..."
 
 class Event(models.Model):
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='events')
-    location = models.CharField(max_length=200)
-    date = models.CharField(max_length=100)
+    # This is the main table for all your events
+    title = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='events',blank=True)
+    location = models.CharField(max_length=200, blank=True)
+    date = models.CharField(max_length=100, blank=True)
     image = models.ImageField(upload_to='events/', blank=True, null=True)
     admission = models.TextField(default="Free admission")
     external_links = models.URLField(blank=True)
